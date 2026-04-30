@@ -1,0 +1,64 @@
+services:
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       music_learning_app
+      POSTGRES_USER:     homka
+      POSTGRES_PASSWORD: 1111
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/src/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U homka -d music_learning_app"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST:     db
+      DB_PORT:     5432
+      DB_NAME:     music_learning_app
+      DB_USER:     homka
+      DB_PASSWORD: 1111
+      PORT:        3000
+      JWT_SECRET:  ${JWT_SECRET:-change_this_secret_in_production}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      CLIENT_ORIGIN: ${CLIENT_ORIGIN:-http://localhost}
+      TRANSCRIPTION_SERVICE_URL: http://transcription:5001
+      # LM Studio runs on the host machine — host.docker.internal resolves to host on Mac/Windows
+      LM_STUDIO_URL: ${LM_STUDIO_URL:-http://host.docker.internal:1234}
+
+  transcription:
+    build: ./transcription-service
+    restart: unless-stopped
+    # transkun is CPU-heavy — give it more time to respond
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5001/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Empty string → calls go to /api/... → nginx proxies to backend
+        VITE_API_URL: ""
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
+volumes:
+  postgres_data:

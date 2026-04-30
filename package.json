@@ -1,0 +1,14 @@
+{
+  "name": "music-theory-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Web application for interactive learning of music theory with note recognition in audio recordings using the Transkun neural network",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "frontend": "npm run dev --workspace=frontend",
+    "backend": "npm run dev --workspace=backend"
+  }
+}
