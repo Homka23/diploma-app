@@ -1,3 +1,4 @@
+import { ErrorBanner } from '../components/ErrorView';
 import { API_BASE } from '../config.js';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -103,7 +104,7 @@ export default function ChangePasswordPage() {
               className={inputClass}
             />
 
-            {error && <p className="text-xs text-red-500">{error}</p>}
+            {error && <ErrorBanner message={error} />}
 
             <button
               type="submit"

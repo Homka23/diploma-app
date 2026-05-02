@@ -56,6 +56,10 @@ export async function login(req, res) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+    if (user.is_blocked) {
+      return res.status(403).json({ error: 'Your account has been blocked' });
+    }
+
     const token = jwt.sign(
       { userId: user.id, email: user.email },
       process.env.JWT_SECRET,
@@ -69,6 +73,7 @@ export async function login(req, res) {
         username: user.username,
         email: user.email,
         display_name: user.display_name,
+        role: user.role,
       },
     });
   } catch (err) {
@@ -174,6 +179,9 @@ export async function googleAuth(req, res) {
     let user = rows[0];
 
     if (user) {
+      if (user.is_blocked) {
+        return res.status(403).json({ error: 'Your account has been blocked' });
+      }
       // Link google_id if this email was registered without Google before
       if (!user.google_id) {
         await pool.query(
@@ -206,6 +214,7 @@ export async function googleAuth(req, res) {
         username: user.username,
         email: user.email,
         display_name: user.display_name,
+        role: user.role,
       },
     });
   } catch (err) {
@@ -218,7 +227,7 @@ export async function getMe(req, res) {
   const userId = req.user.userId;
   try {
     const { rows } = await pool.query(
-      `SELECT id, username, email, display_name, streak_days, last_active_date, created_at
+      `SELECT id, username, email, display_name, role, streak_days, last_active_date, created_at
        FROM users WHERE id = $1`,
       [userId],
     );

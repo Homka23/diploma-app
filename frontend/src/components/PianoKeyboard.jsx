@@ -1,4 +1,18 @@
 import { useState, useRef, useEffect } from 'react';
+
+function RotateHint() {
+  return (
+    <div className="lg:hidden portrait:flex landscape:hidden items-center gap-2.5 rounded-xl border border-primary/10 bg-white px-3 py-2.5 text-xs text-primary/50">
+      <svg className="h-5 w-5 flex-shrink-0 text-primary/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="4" y="2" width="10" height="16" rx="2" />
+        <path d="M16 9l3 3-3 3" />
+        <path d="M2 15l3 3 3-3" />
+        <path d="M19 12H9" />
+      </svg>
+      <span>Rotate your device for easier play</span>
+    </div>
+  );
+}
 import { getPiano, getAudioCtx, DURATION_SEC } from '../utils/pianoAudio';
 
 // ── Note helpers ──────────────────────────────────────────────────────────────
@@ -119,6 +133,7 @@ export default function PianoKeyboard({ notes = [], startNote = 'C3', octaves = 
 
   return (
     <div className="space-y-3">
+      <RotateHint />
 
       {/* Play / Stop button */}
       {notes.length > 0 && (

@@ -73,6 +73,7 @@ CREATE TABLE IF NOT EXISTS topics (
     title           VARCHAR(255) NOT NULL,
     description     TEXT,
     position        INT NOT NULL,
+    force_unlock    BOOLEAN NOT NULL DEFAULT FALSE,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT uq_topics_position UNIQUE (position)
@@ -84,6 +85,7 @@ CREATE TABLE IF NOT EXISTS lessons (
     title           VARCHAR(255) NOT NULL,
     description     TEXT,
     position        INT NOT NULL,
+    force_unlock    BOOLEAN NOT NULL DEFAULT FALSE,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT uq_lessons_topic_position UNIQUE (topic_id, position)
@@ -377,6 +379,24 @@ CREATE TABLE IF NOT EXISTS user_transcription_results (
 CREATE INDEX IF NOT EXISTS idx_user_transcription_results_user_id ON user_transcription_results(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_transcription_results_lesson_id ON user_transcription_results(lesson_id);
 CREATE INDEX IF NOT EXISTS idx_user_transcription_results_block_id ON user_transcription_results(transcription_block_id);
+
+-- ========================================================
+-- Transcription attempt history (max 10 per user per block)
+-- ========================================================
+
+CREATE TABLE IF NOT EXISTS user_transcription_attempts (
+    id                     BIGSERIAL PRIMARY KEY,
+    user_id                BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    lesson_id              BIGINT NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
+    transcription_block_id BIGINT NOT NULL REFERENCES transcription_blocks(block_id) ON DELETE CASCADE,
+    score_percent          NUMERIC(5,2) NOT NULL CHECK (score_percent >= 0 AND score_percent <= 100),
+    passed                 BOOLEAN NOT NULL,
+    recognized_json        JSONB NOT NULL,
+    created_at             TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_transcription_attempts_user_block
+    ON user_transcription_attempts(user_id, transcription_block_id);
 
 -- ========================================================
 -- updated_at trigger

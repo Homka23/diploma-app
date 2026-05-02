@@ -1,6 +1,7 @@
 import { API_BASE } from '../config.js';
 import { useState, useEffect } from 'react';
 import { getPiano, getAudioCtx } from '../utils/pianoAudio';
+import { ErrorScreen } from './ErrorView';
 
 // ── Piano performance helpers ─────────────────────────────────────────────────
 const SEMITONES  = { C:0, D:2, E:4, F:5, G:7, A:9, B:11 };
@@ -51,11 +52,22 @@ async function playPianoKey(noteName) {
 }
 
 function PianoPerformanceBlock({ block, number, performed, onAnswer }) {
-  const expected = block.expected?.notes ?? [];
+  // Support both old format (strings) and new format ({note, duration})
+  const rawNotes = block.expected?.notes ?? [];
+  const expected = rawNotes.map(n => typeof n === 'string' ? { note: n, duration: 1 } : n);
+  const [playing, setPlaying] = useState(false);
 
   function handleKey(noteName) {
     playPianoKey(noteName);
     onAnswer([...performed, noteName]);
+  }
+
+  async function handlePlay() {
+    if (playing || !expected.length) return;
+    setPlaying(true);
+    const totalMs = await playNotes(expected);
+    const fallback = expected.reduce((s, n) => s + n.duration, 0) * 1000;
+    setTimeout(() => setPlaying(false), (totalMs || fallback) + 300);
   }
 
   return (
@@ -66,12 +78,28 @@ function PianoPerformanceBlock({ block, number, performed, onAnswer }) {
           <p className="text-[15px] font-medium text-dark">{block.instructionText}</p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {expected.map((n, i) => (
-              <span key={i} className="rounded-md bg-primary/8 px-2.5 py-1 text-sm font-semibold text-primary">{n}</span>
+              <span key={i} className="rounded-md bg-primary/8 px-2.5 py-1 text-sm font-semibold text-primary">{n.note}</span>
             ))}
           </div>
+          <button onClick={handlePlay} disabled={playing}
+            className="mt-2 flex items-center gap-1.5 text-xs text-[#408A71]/70 hover:text-[#408A71] transition-colors disabled:opacity-40">
+            <svg className={`h-3.5 w-3.5 ${playing ? 'animate-pulse' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clipRule="evenodd" />
+            </svg>
+            {playing ? 'Playing…' : 'Listen'}
+          </button>
         </div>
       </div>
 
+      <div className="lg:hidden portrait:flex landscape:hidden items-center gap-2.5 rounded-xl border border-primary/10 bg-white px-3 py-2.5 text-xs text-primary/50 mb-3">
+        <svg className="h-5 w-5 flex-shrink-0 text-primary/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="4" y="2" width="10" height="16" rx="2" />
+          <path d="M16 9l3 3-3 3" />
+          <path d="M2 15l3 3 3-3" />
+          <path d="M19 12H9" />
+        </svg>
+        <span>Rotate your device for easier play</span>
+      </div>
       <div className="mb-4 rounded-2xl border border-primary/8 bg-white p-3 shadow-sm overflow-x-auto">
         <MiniPiano performed={performed} onKeyClick={handleKey} />
       </div>
@@ -207,7 +235,7 @@ function QuizQuestion({ question, number, selectedOptionId, onSelect }) {
 }
 
 // ── Score screen ──────────────────────────────────────────────────────────────
-function ScoreScreen({ scorePercent, correct, total, passed, onRetry, blocks, quizAnswers, earAnswers, pianoAnswers }) {
+function ScoreScreen({ scorePercent, correct, total, passed, onRetry, blocks, quizAnswers, earAnswers, pianoAnswers, lessonId }) {
   const [showReview, setShowReview] = useState(false);
 
   const quizMap  = Object.fromEntries((quizAnswers  ?? []).map(a => [a.questionId, a]));
@@ -236,7 +264,16 @@ function ScoreScreen({ scorePercent, correct, total, passed, onRetry, blocks, qu
             </div>
           </div>
         </div>
-        <div className="flex gap-3 px-6 py-4">
+        <div className="flex flex-wrap gap-3 px-6 py-4">
+          <button
+            onClick={onRetry}
+            className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-hover"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+            </svg>
+            Try again
+          </button>
           <button
             onClick={() => setShowReview(v => !v)}
             className="flex items-center gap-2 rounded-xl border border-primary/20 px-4 py-2.5 text-sm font-medium text-primary/70 transition-colors hover:bg-primary/5"
@@ -247,29 +284,23 @@ function ScoreScreen({ scorePercent, correct, total, passed, onRetry, blocks, qu
             </svg>
             {showReview ? 'Hide review' : 'Review answers'}
           </button>
-          <button
-            onClick={onRetry}
-            className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-hover"
-          >
-            <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
-            </svg>
-            Try again
-          </button>
         </div>
       </div>
 
       {showReview && (
         <div className="space-y-3">
-          {blocks.map((block, bi) => {
+          {(() => {
+            let num = 0;
+            return blocks.map((block) => {
             if (block.type === 'quiz') {
-              return block.questions.map((q, qi) => {
+              return block.questions.map((q) => {
+                num++;
                 const ans = quizMap[q.id];
                 const correctOpt = q.options.find(o => o.isCorrect);
                 return (
                   <ReviewCard
                     key={`q-${q.id}`}
-                    number={bi + qi + 1}
+                    number={num}
                     text={q.questionText}
                     options={q.options}
                     selectedId={ans?.selectedOptionId}
@@ -281,12 +312,13 @@ function ScoreScreen({ scorePercent, correct, total, passed, onRetry, blocks, qu
               });
             }
             if (block.type === 'ear_training') {
+              num++;
               const ans = earMap[block.blockId];
               const correctOpt = block.options.find(o => o.isCorrect);
               return (
                 <ReviewCard
                   key={`e-${block.blockId}`}
-                  number={bi + 1}
+                  number={num}
                   text={block.promptText}
                   options={block.options}
                   selectedId={ans?.selectedOptionId}
@@ -299,22 +331,24 @@ function ScoreScreen({ scorePercent, correct, total, passed, onRetry, blocks, qu
               );
             }
             if (block.type === 'piano_performance') {
+              num++;
               const ans      = pianoMap[block.blockId];
-              const expected = block.expected?.notes ?? [];
+              const rawNotes = block.expected?.notes ?? [];
+              const expected = rawNotes.map(n => typeof n === 'string' ? { note: n, duration: 1 } : n);
               const performed = ans?.performed ?? [];
               return (
                 <div key={`p-${block.blockId}`} className="overflow-hidden rounded-xl bg-white shadow-[0_4px_24px_-2px_rgba(0,0,0,0.06),0_1px_4px_-1px_rgba(0,0,0,0.04)]">
                   <div className="px-6 pt-5 pb-4">
                     <div className="flex items-start gap-3">
-                      <span className={`mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${ans?.isCorrect ? 'bg-primary/10 text-primary' : 'bg-red-100 text-red-500'}`}>{bi + 1}</span>
+                      <span className={`mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${ans?.isCorrect ? 'bg-primary/10 text-primary' : 'bg-red-100 text-red-500'}`}>{num}</span>
                       <div className="flex-1">
                         <p className="text-[15px] font-medium text-dark">{block.instructionText}</p>
                         <div className="mt-3 flex flex-wrap gap-1.5">
                           {expected.map((n, i) => {
-                            const match = performed[i] === n;
+                            const match = performed[i] === n.note;
                             return (
                               <span key={i} className={`rounded-md px-2.5 py-1 text-sm font-semibold ${match ? 'bg-primary/10 text-primary' : 'bg-red-50 text-red-500'}`}>
-                                {n}{performed[i] && !match ? ` (got ${performed[i]})` : ''}
+                                {n.note}{performed[i] && !match ? ` (got ${performed[i]})` : ''}
                               </span>
                             );
                           })}
@@ -327,7 +361,8 @@ function ScoreScreen({ scorePercent, correct, total, passed, onRetry, blocks, qu
               );
             }
             return null;
-          })}
+          });
+          })()}
         </div>
       )}
     </div>
@@ -391,7 +426,7 @@ function ReviewCard({ number, text, options, selectedId, isCorrect, correctId, i
 }
 
 // ── Main tab ──────────────────────────────────────────────────────────────────
-export function QuizTab({ lessonId, onPassed }) {
+export function QuizTab({ lessonId, onPassed, onProgressChange }) {
   const [blocks, setBlocks]           = useState(null);
   const [loading, setLoading]         = useState(true);
   const [error, setError]             = useState('');
@@ -423,9 +458,18 @@ export function QuizTab({ lessonId, onPassed }) {
   // Flatten all "items" that need an answer
   const quizQuestions  = blocks?.filter(b => b.type === 'quiz').flatMap(b => b.questions) ?? [];
   const earBlocks      = blocks?.filter(b => b.type === 'ear_training') ?? [];
-  const totalItems    = quizQuestions.length + earBlocks.length;
-  const answeredCount = Object.keys(quizSelected).length + Object.keys(earSelected).length;
-  const allAnswered   = totalItems > 0 && answeredCount === totalItems;
+  const pianoBlocks    = blocks?.filter(b => b.type === 'piano_performance') ?? [];
+  const totalItems    = quizQuestions.length + earBlocks.length + pianoBlocks.length;
+  const pianoStarted  = Object.values(pianoAnswers).filter(v => v.length > 0).length;
+  const answeredCount = Object.keys(quizSelected).length + Object.keys(earSelected).length + pianoStarted;
+  const allAnswered   = (quizQuestions.length + earBlocks.length) > 0 &&
+                        Object.keys(quizSelected).length + Object.keys(earSelected).length ===
+                        quizQuestions.length + earBlocks.length;
+
+  useEffect(() => {
+    onProgressChange?.(answeredCount, totalItems);
+  }, [answeredCount, totalItems]);
+
 
   async function handleSubmit() {
     if (!allAnswered || submitting) return;
@@ -457,11 +501,11 @@ export function QuizTab({ lessonId, onPassed }) {
   }
 
   if (loading) return <div className="py-20 text-center text-sm text-primary/30">Loading…</div>;
-  if (error)   return <div className="py-20 text-center text-sm text-red-400">{error}</div>;
+  if (error)   return <ErrorScreen message={error} onRetry={load} />;
   if (!blocks?.length) return <div className="py-20 text-center text-sm text-primary/30">No test content yet.</div>;
 
   if (result) {
-    return <ScoreScreen {...result} onRetry={load} />;
+    return <ScoreScreen {...result} lessonId={lessonId} onRetry={load} />;
   }
 
   // Render all blocks in order, each question/ear block numbered globally

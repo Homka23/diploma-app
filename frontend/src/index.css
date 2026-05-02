@@ -27,12 +27,87 @@
   }
 }
 
+@keyframes fade-in {
+  from { opacity: 0; transform: translateX(18px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fade-out {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(-18px); }
+}
+
+@keyframes flash-correct {
+  0%   { background-color: transparent; }
+  30%  { background-color: rgba(64, 138, 113, 0.08); }
+  100% { background-color: transparent; }
+}
+
+@keyframes flash-wrong {
+  0%   { background-color: transparent; }
+  30%  { background-color: rgba(239, 68, 68, 0.07); }
+  100% { background-color: transparent; }
+}
+
+@keyframes slide-down {
+  from { opacity: 0; transform: translateX(-50%) translateY(-16px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+@keyframes modal-in {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes checkmark {
+  from { stroke-dashoffset: 48; }
+  to   { stroke-dashoffset: 0; }
+}
+
+@keyframes eq {
+  0%, 100% { height: 6px;  opacity: 0.4; }
+  50%       { height: 28px; opacity: 1;   }
+}
+
+@keyframes wave {
+  0%, 100% { transform: scaleY(0.15); opacity: 0.35; }
+  50%       { transform: scaleY(1);   opacity: 1;    }
+}
+
+@keyframes dot-bounce {
+  0%, 80%, 100% { transform: translateY(0);    opacity: 0.4; }
+  40%           { transform: translateY(-8px); opacity: 1;   }
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
 @theme {
   --animate-fade-slide-up: fade-slide-up 0.5s ease-out both;
+  --animate-fade-in: fade-in 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+  --animate-fade-out: fade-out 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+  --animate-slide-down: slide-down 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+  --animate-modal-in:   modal-in   0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+  --animate-overlay-in: overlay-in 0.3s ease both;
+  --animate-eq:          eq          0.9s ease-in-out infinite;
+  --animate-wave:        wave        0.8s ease-in-out infinite;
+  --animate-dot-bounce:  dot-bounce  1.2s ease-in-out infinite;
+  --animate-fade-in-up:  fade-in-up  0.4s ease-out both;
 }
 
 * {
   font-family: var(--font-sans);
+}
+
+html, body {
+  background-color: #f7f7f7;
 }
 
 .piano-scroll::-webkit-scrollbar {

@@ -1,6 +1,7 @@
 import pool from '../db/index.js';
 import { refreshProgress } from '../helpers/progress.js';
 
+
 export async function getLessonTest(req, res) {
   const lessonId = parseInt(req.params.id, 10);
   if (isNaN(lessonId)) return res.status(400).json({ error: 'Invalid lesson id' });
@@ -168,3 +169,4 @@ export async function submitTest(req, res) {
     res.status(500).json({ error: err.message });
   }
 }
+

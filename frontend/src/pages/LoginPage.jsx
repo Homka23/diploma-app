@@ -1,6 +1,7 @@
 import { API_BASE } from '../config.js';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { ErrorBanner } from '../components/ErrorView';
 
 import AuthImage from '../components/AuthImage';
 import GoogleAuthButton from '../components/GoogleAuthButton';
@@ -11,6 +12,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
+
+  useEffect(() => {
+    const msg = sessionStorage.getItem('auth_error');
+    if (msg) { setError(msg); sessionStorage.removeItem('auth_error'); }
+  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -91,7 +97,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {error && <p className="text-xs text-red-500">{error}</p>}
+            {error && <ErrorBanner message={error} />}
 
             <button
               type="submit"

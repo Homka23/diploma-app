@@ -88,36 +88,59 @@ export function LessonSidebar({ currentId, refreshKey, onLinkClick, onCollapse }
         {topics.map((topic, ti) => {
           const isOpen = openTopics.has(topic.id);
           return (
-            <div key={topic.id} className="border-b border-primary/6 last:border-0">
+            <div key={topic.id} className={`border-b border-primary/6 last:border-0 ${topic.locked ? 'opacity-40' : ''}`}>
               <button
-                onClick={() => toggleTopic(topic.id)}
-                className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-primary/4"
+                onClick={() => !topic.locked && toggleTopic(topic.id)}
+                disabled={topic.locked}
+                className={`flex w-full items-center gap-3 px-5 py-3 text-left transition-colors disabled:cursor-not-allowed ${
+                  topic.locked ? '' : 'hover:bg-primary/4'
+                }`}
               >
                 <span className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md text-[12px] font-bold transition-colors ${
-                  isOpen ? 'bg-[#408A71] text-white' : 'bg-primary/8 text-primary/50'
-                }`}>{ti + 1}</span>
+                  topic.locked ? 'bg-primary/8 text-primary/40' : isOpen ? 'bg-[#408A71] text-white' : 'bg-primary/8 text-primary/50'
+                }`}>
+                  {topic.locked
+                    ? <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
+                    : ti + 1
+                  }
+                </span>
                 <span className={`flex-1 text-[15px] font-semibold leading-snug ${isOpen ? 'text-primary' : 'text-dark/70'}`}>
                   {topic.title}
                 </span>
-                <svg className={`h-4 w-4 flex-shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180 text-[#408A71]' : 'text-primary/30'}`}
-                  viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
+                {!topic.locked && (
+                  <svg className={`h-4 w-4 flex-shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180 text-[#408A71]' : 'text-primary/30'}`}
+                    viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                )}
               </button>
 
-              {isOpen && (
+              {isOpen && !topic.locked && (
                 <div className="pb-1 pt-0.5">
                   {topic.lessons.map((lesson) => {
                     const isCurrent = String(lesson.id) === String(currentId);
+                    if (lesson.locked) {
+                      return (
+                        <div
+                          key={lesson.id}
+                          className="flex items-center py-2.5 pl-[60px] pr-4 opacity-40"
+                        >
+                          <p className="min-w-0 flex-1 text-[14px] leading-snug text-dark/60">{lesson.title}</p>
+                          <svg className="h-3.5 w-3.5 flex-shrink-0 text-primary/30" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      );
+                    }
                     return (
                       <Link
                         key={lesson.id}
                         to={`/lesson/${lesson.id}`}
                         onClick={onLinkClick}
-                        className={`flex items-center py-2.5 pl-[60px] transition-colors ${
+                        className={`flex items-center py-2.5 pl-[60px] transition-all duration-200 ${
                           isCurrent
                             ? 'border-r-2 border-[#408A71] bg-[#408A71]/8 pr-4'
-                            : 'border-r-2 border-transparent pr-4 hover:bg-primary/5'
+                            : 'border-r-2 border-transparent pr-4 hover:translate-x-1 hover:border-[#408A71]/30'
                         }`}
                       >
                         <p className={`min-w-0 flex-1 text-[14px] leading-snug ${isCurrent ? 'font-semibold text-[#408A71]' : 'text-dark/60'}`}>

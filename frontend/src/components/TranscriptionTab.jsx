@@ -1,5 +1,7 @@
 import { API_BASE } from '../config.js';
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ErrorScreen, ErrorBanner } from './ErrorView';
 import { Renderer, Stave, StaveNote, Voice, Formatter, Accidental } from 'vexflow';
 
 // ── Note helpers ──────────────────────────────────────────────────────────────
@@ -59,62 +61,79 @@ function groupToChords(notes, colors = [], beatUnit = 0.5) {
 
 // ── Staff view (VexFlow) ──────────────────────────────────────────────────────
 function StaffView({ vexNotes, clef = 'treble', label, timeSignature }) {
-  const ref = useRef(null);
+  const ref          = useRef(null);
+  const lastWidthRef = useRef(0);
 
   useEffect(() => {
     if (!ref.current || !vexNotes?.length) return;
-    const el = ref.current;
-    el.innerHTML = '';
 
-    const style   = window.getComputedStyle(el);
-    const padding = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
-    const width   = Math.max((el.clientWidth - padding) || 560, 200);
+    function render() {
+      const el = ref.current;
+      if (!el) return;
 
-    const CHUNK = 4;
-    const chunks = [];
-    for (let i = 0; i < vexNotes.length; i += CHUNK) chunks.push(vexNotes.slice(i, i + CHUNK));
+      const style   = window.getComputedStyle(el);
+      const padding = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+      const width   = Math.max((el.clientWidth - padding) || 560, 200);
+      if (Math.abs(width - lastWidthRef.current) < 2) return;
+      lastWidthRef.current = width;
 
-    const renderer = new Renderer(el, Renderer.Backends.SVG);
-    renderer.resize(width, 160);
-    const ctx = renderer.getContext();
+      el.innerHTML = '';
 
-    // First stave is wider to accommodate clef + time signature
-    const firstExtra = timeSignature ? 90 : 75;
-    const w0 = chunks.length === 1 ? width - 10 : Math.round(width * 0.52);
-    const wR = chunks.length  > 1 ? (width - w0 - 10) / (chunks.length - 1) : 0;
+      const CHUNK = 4;
+      const chunks = [];
+      for (let i = 0; i < vexNotes.length; i += CHUNK) chunks.push(vexNotes.slice(i, i + CHUNK));
 
-    chunks.forEach((chunk, ci) => {
-      const x = ci === 0 ? 5 : 5 + w0 + wR * (ci - 1);
-      const w = ci === 0 ? w0 : wR;
-      const stave = new Stave(x, 20, w);
-      if (ci === 0) {
-        stave.addClef(clef);
-        if (timeSignature) stave.addTimeSignature(timeSignature);
-      }
-      stave.setContext(ctx).draw();
+      const renderer = new Renderer(el, Renderer.Backends.SVG);
+      renderer.resize(width, 160);
+      const ctx = renderer.getContext();
 
-      try {
-        const tickables = chunk.map(n => {
-          const sn = new StaveNote({ keys: n.keys, duration: n.duration });
-          (n.accs ?? []).forEach((acc, i) => {
-            if (acc) sn.addModifier(new Accidental(acc), i);
+      const firstExtra = timeSignature ? 90 : 75;
+      const w0 = chunks.length === 1 ? width - 10 : Math.round(width * 0.52);
+      const wR = chunks.length  > 1 ? (width - w0 - 10) / (chunks.length - 1) : 0;
+
+      chunks.forEach((chunk, ci) => {
+        const x = ci === 0 ? 5 : 5 + w0 + wR * (ci - 1);
+        const w = ci === 0 ? w0 : wR;
+        const stave = new Stave(x, 20, w);
+        if (ci === 0) {
+          stave.addClef(clef);
+          if (timeSignature) stave.addTimeSignature(timeSignature);
+        }
+        stave.setContext(ctx).draw();
+
+        try {
+          const tickables = chunk.map(n => {
+            const sn = new StaveNote({ keys: n.keys, duration: n.duration });
+            (n.accs ?? []).forEach((acc, i) => {
+              if (acc) sn.addModifier(new Accidental(acc), i);
+            });
+            if (n.color) sn.setStyle({ fillStyle: n.color, strokeStyle: n.color });
+            return sn;
           });
-          if (n.color) sn.setStyle({ fillStyle: n.color, strokeStyle: n.color });
-          return sn;
-        });
-        const v = new Voice({ num_beats: 4, beat_value: 4 }).setStrict(false);
-        v.addTickables(tickables);
-        new Formatter().joinVoices([v]).format([v], w - (ci === 0 ? firstExtra : 15));
-        v.draw(ctx, stave);
-      } catch { /* skip invalid notes */ }
-    });
+          const v = new Voice({ num_beats: 4, beat_value: 4 }).setStrict(false);
+          v.addTickables(tickables);
+          new Formatter().joinVoices([v]).format([v], w - (ci === 0 ? firstExtra : 15));
+          v.draw(ctx, stave);
+        } catch { /* skip invalid notes */ }
+      });
 
-    const svg = el.querySelector('svg');
-    if (svg) {
-      svg.setAttribute('viewBox', `0 0 ${width} 160`);
-      svg.setAttribute('width', '100%');
-      svg.removeAttribute('height');
+      const svg = el.querySelector('svg');
+      if (svg) {
+        svg.setAttribute('viewBox', `0 0 ${width} 160`);
+        svg.setAttribute('width', '100%');
+        svg.removeAttribute('height');
+      }
     }
+
+    render();
+
+    let rafId = null;
+    const observer = new ResizeObserver(() => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => { render(); rafId = null; });
+    });
+    observer.observe(ref.current);
+    return () => { observer.disconnect(); if (rafId) cancelAnimationFrame(rafId); };
   }, [vexNotes, clef, timeSignature]);
 
   if (!vexNotes?.length) return null;
@@ -171,7 +190,7 @@ function PianoRoll({ notes }) {
 }
 
 // ── Score screen ──────────────────────────────────────────────────────────────
-function ScoreScreen({ scorePercent, passed, recognized, expected, notes, lessonId, onRetry, noteDurations = [], durationScore = null, timeSignature = null, beatUnit = null }) {
+function ScoreScreen({ scorePercent, passed, recognized, expected, notes, lessonId, onRetry, noteDurations = [], durationScore = null, timeSignature = null, beatUnit = null, nextLesson = null, canGoNext = false, onNextLesson }) {
   const [feedback, setFeedback]         = useState('');
   const [feedbackLoading, setFbLoading] = useState(false);
   const [feedbackError, setFbError]     = useState('');
@@ -289,30 +308,41 @@ function ScoreScreen({ scorePercent, passed, recognized, expected, notes, lesson
             disabled={feedbackLoading}
             className="flex items-center gap-2 rounded-xl border border-primary/20 px-4 py-2.5 text-sm font-semibold text-primary/70 transition-colors hover:bg-primary/5 disabled:opacity-40"
           >
-            {feedbackLoading ? (
-              <>
-                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-                </svg>
-                AI is analyzing…
-              </>
-            ) : (
-              <>
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 2a4 4 0 014 4v1h1a3 3 0 013 3v7a3 3 0 01-3 3H7a3 3 0 01-3-3v-7a3 3 0 013-3h1V6a4 4 0 014-4z"/>
-                  <circle cx="9" cy="13" r="1" fill="currentColor"/>
-                  <circle cx="15" cy="13" r="1" fill="currentColor"/>
-                </svg>
-                Ask AI for feedback
-              </>
-            )}
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2a4 4 0 014 4v1h1a3 3 0 013 3v7a3 3 0 01-3 3H7a3 3 0 01-3-3v-7a3 3 0 013-3h1V6a4 4 0 014-4z"/>
+              <circle cx="9" cy="13" r="1" fill="currentColor"/>
+              <circle cx="15" cy="13" r="1" fill="currentColor"/>
+            </svg>
+            {feedbackLoading ? 'Analyzing…' : 'Ask AI for feedback'}
           </button>
         </div>
 
         {/* LLM feedback */}
-        {(feedback || feedbackError) && (
-          <div className={`mx-6 mb-5 rounded-xl px-4 py-4 text-sm leading-relaxed ${feedbackError ? 'bg-red-50 text-red-500' : 'bg-primary/6 text-dark/80'}`}>
+        {feedbackLoading && (
+          <div className="mx-6 mb-5 rounded-xl bg-primary/5 px-5 py-5 animate-fade-in-up">
+            <p className="mb-4 text-[11px] font-semibold uppercase tracking-wide text-primary/40">AI feedback</p>
+            <div className="flex items-center gap-4">
+              {/* Mini waveform */}
+              <div className="flex items-end gap-[3px] h-7 flex-shrink-0">
+                {[0,1,2,3,4].map(i => (
+                  <div key={i} className="w-[4px] rounded-full bg-primary/50 animate-wave origin-bottom"
+                    style={{ height: '28px', animationDelay: `${i * 0.1}s` }} />
+                ))}
+              </div>
+              <div>
+                <p className="text-sm font-medium text-primary">AI is analyzing your performance</p>
+                <div className="flex gap-1 mt-1.5">
+                  {[0,1,2].map(i => (
+                    <div key={i} className="h-1.5 w-1.5 rounded-full bg-primary/40 animate-dot-bounce"
+                      style={{ animationDelay: `${i * 0.2}s` }} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        {(feedback || feedbackError) && !feedbackLoading && (
+          <div className={`mx-6 mb-5 rounded-xl px-4 py-4 text-sm leading-relaxed animate-fade-in-up ${feedbackError ? 'bg-red-50 text-red-500' : 'bg-primary/6 text-dark/80'}`}>
             {!feedbackError && (
               <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-primary/40">AI feedback</p>
             )}
@@ -389,20 +419,145 @@ function ScoreScreen({ scorePercent, passed, recognized, expected, notes, lesson
           </p>
         )}
       </div>
+
+      {nextLesson && (
+        <div className="flex flex-col items-end gap-1">
+          <button
+            onClick={canGoNext ? onNextLesson : undefined}
+            disabled={!canGoNext}
+            className={`flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition-colors
+              ${canGoNext
+                ? 'bg-primary text-white hover:bg-primary-hover'
+                : 'bg-primary/8 text-primary/30 cursor-not-allowed'
+              }`}
+          >
+            {nextLesson.title}
+            <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+          {!canGoNext && (
+            <p className="text-xs text-primary/30">Complete theory and test first</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Attempt history ───────────────────────────────────────────────────────────
+function AttemptHistory({ lessonId, refreshTrigger }) {
+  const [attempts, setAttempts] = useState([]);
+  const [open, setOpen]         = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    fetch(`${API_BASE}/api/lessons/${lessonId}/transcription/attempts`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.json())
+      .then(d => setAttempts(d.attempts ?? []))
+      .catch(() => {});
+  }, [lessonId, refreshTrigger]);
+
+  if (!attempts.length) return null;
+
+  const best = Math.max(...attempts.map(a => a.score_percent));
+
+  // mini bar chart — show up to 10 bars newest→oldest (left to right)
+  const bars = [...attempts].reverse();
+
+  function formatDate(iso) {
+    const d = new Date(iso);
+    return d.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' }) +
+           ' ' + d.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  return (
+    <div className="overflow-hidden rounded-xl bg-white shadow-[0_4px_24px_-2px_rgba(0,0,0,0.06),0_1px_4px_-1px_rgba(0,0,0,0.04)]">
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="flex w-full items-center justify-between px-6 py-4 text-left"
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-semibold text-dark/70">
+            Attempt history
+          </span>
+          <span className="rounded-full bg-primary/8 px-2 py-0.5 text-xs font-semibold text-primary">
+            {attempts.length}
+          </span>
+          <span className="text-xs text-dark/35">best {best}%</span>
+        </div>
+        <div className="flex items-center gap-3">
+          {/* mini sparkline */}
+          <svg width={attempts.length * 10 - 2} height={24} className="shrink-0">
+            {bars.map((a, i) => {
+              const h = Math.max(3, Math.round((a.score_percent / 100) * 20));
+              const fill = a.passed ? '#285A48' : a.score_percent >= 50 ? '#d97706' : '#ef4444';
+              return (
+                <rect
+                  key={i}
+                  x={i * 10}
+                  y={22 - h}
+                  width={8}
+                  height={h}
+                  rx={2}
+                  fill={fill}
+                  opacity={0.7}
+                />
+              );
+            })}
+          </svg>
+          <svg
+            className={`h-4 w-4 text-dark/30 transition-transform ${open ? 'rotate-180' : ''}`}
+            viewBox="0 0 20 20" fill="currentColor"
+          >
+            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
+        </div>
+      </button>
+
+      {open && (
+        <div className="border-t border-primary/6 divide-y divide-primary/6">
+          {attempts.map((a, i) => (
+            <div key={a.id} className="flex items-center justify-between px-6 py-3">
+              <div className="flex items-center gap-3">
+                <span className="w-5 text-xs text-dark/30 text-right">#{attempts.length - i}</span>
+                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
+                  a.passed ? 'bg-primary/10 text-primary' : 'bg-red-50 text-red-500'
+                }`}>
+                  {a.passed ? 'Passed' : 'Failed'}
+                </span>
+                <span className={`text-sm font-bold ${
+                  a.passed ? 'text-primary' : a.score_percent >= 50 ? 'text-amber-600' : 'text-red-500'
+                }`}>
+                  {a.score_percent}%
+                </span>
+              </div>
+              <span className="text-xs text-dark/30">{formatDate(a.created_at)}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
 // ── Main tab ──────────────────────────────────────────────────────────────────
-export function TranscriptionTab({ lessonId, onPassed }) {
-  const [block, setBlock]           = useState(null);
-  const [loading, setLoading]       = useState(true);
-  const [error, setError]           = useState('');
-  const [recording, setRecording]   = useState(false);
-  const [audioBlob, setAudioBlob]   = useState(null);
-  const [audioUrl, setAudioUrl]     = useState(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [result, setResult]         = useState(null);
+export function TranscriptionTab({ lessonId, onPassed, result, onResultChange, theoryDone = false, testDone = false, nextLesson = null, onNavigate }) {
+  const navigate = useNavigate();
+  const canGoNext = theoryDone && testDone && !nextLesson?.locked;
+  const goNext = () => onNavigate ? onNavigate(`/lesson/${nextLesson.id}?tab=theory`) : navigate(`/lesson/${nextLesson.id}?tab=theory`);
+
+  const [block, setBlock]               = useState(null);
+  const [loading, setLoading]           = useState(true);
+  const [error, setError]               = useState('');
+  const [recording, setRecording]       = useState(false);
+  const [audioBlob, setAudioBlob]       = useState(null);
+  const [audioUrl, setAudioUrl]         = useState(null);
+  const [submitting, setSubmitting]     = useState(false);
+  const [skipped, setSkipped]           = useState(false);
+  const [attemptRefresh, setAttemptRefresh] = useState(0);
 
   const mediaRecorderRef = useRef(null);
   const chunksRef        = useRef([]);
@@ -438,7 +593,7 @@ export function TranscriptionTab({ lessonId, onPassed }) {
       setRecording(true);
       setAudioBlob(null);
       setAudioUrl(null);
-      setResult(null);
+      onResultChange?.(null);
     } catch {
       setError('Microphone access denied');
     }
@@ -464,7 +619,8 @@ export function TranscriptionTab({ lessonId, onPassed }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Submit failed');
-      setResult(data);
+      onResultChange?.(data);
+      setAttemptRefresh(n => n + 1);
       if (data.passed) onPassed?.();
     } catch (e) {
       setError(e.message);
@@ -474,15 +630,80 @@ export function TranscriptionTab({ lessonId, onPassed }) {
   }
 
   function handleRetry() {
-    setResult(null);
+    onResultChange?.(null);
     setAudioBlob(null);
     setAudioUrl(null);
     setError('');
   }
 
-  if (loading) return <div className="py-20 text-center text-sm text-primary/30">Loading…</div>;
-  if (error && !block) return <div className="py-20 text-center text-sm text-red-400">{error}</div>;
-  if (result) return <ScoreScreen {...result} lessonId={lessonId} onRetry={handleRetry} />;
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center py-24 gap-5">
+      <div className="flex items-end gap-[4px] h-10">
+        {[0,1,2,3,4,5,6].map(i => (
+          <div key={i} className="w-[5px] rounded-full bg-primary animate-wave origin-bottom"
+            style={{ animationDelay: `${i * 0.1}s`, height: '40px' }} />
+        ))}
+      </div>
+      <p className="text-sm font-medium text-primary/50">Loading…</p>
+    </div>
+  );
+  if (error && !block) return <ErrorScreen message={error} />;
+  if (result) return (
+    <div className="space-y-4">
+      <ScoreScreen
+        {...result}
+        lessonId={lessonId}
+        onRetry={handleRetry}
+        nextLesson={nextLesson}
+        canGoNext={canGoNext}
+        onNextLesson={goNext}
+      />
+      <AttemptHistory lessonId={lessonId} refreshTrigger={attemptRefresh} />
+    </div>
+  );
+
+  if (skipped) return (
+    <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+      <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/8">
+        <svg className="h-8 w-8 text-primary/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M9 18V5l12-2v13" />
+          <circle cx="6" cy="18" r="3" />
+          <circle cx="18" cy="16" r="3" />
+        </svg>
+      </div>
+      <p className="text-base font-semibold text-primary mb-1.5">No problem</p>
+      <p className="text-sm text-primary/45 max-w-xs mb-7">
+        You can come back to this task anytime when you have access to an instrument.
+      </p>
+      <button
+        onClick={() => setSkipped(false)}
+        className="flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary-hover"
+      >
+        Try it now
+      </button>
+      {nextLesson && (
+        <div className="mt-3 flex flex-col items-center gap-1">
+          <button
+            onClick={canGoNext ? goNext : undefined}
+            disabled={!canGoNext}
+            className={`flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition-colors
+              ${canGoNext
+                ? 'bg-primary/10 text-primary hover:bg-primary/16'
+                : 'text-primary/25 cursor-not-allowed'
+              }`}
+          >
+            {nextLesson.title}
+            <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+          {!canGoNext && (
+            <p className="text-xs text-primary/30">Complete theory and test first</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
 
   const expected       = block?.expected_json?.notes          ?? [];
   const timeSignature  = block?.expected_json?.timeSignature  ?? null;
@@ -491,6 +712,30 @@ export function TranscriptionTab({ lessonId, onPassed }) {
                  accs: [n.includes('#') ? '#' : n.includes('b') ? 'b' : null] }))
     .filter(n => n.keys.length);
   const expectedClef = 'treble';
+
+  if (submitting) return (
+    <div className="flex flex-col items-center justify-center py-20 gap-8 animate-fade-in-up">
+      {/* Waveform */}
+      <div className="relative flex items-end justify-center gap-[5px] h-16 w-48">
+        {Array.from({ length: 16 }, (_, i) => (
+          <div key={i} className="w-[6px] rounded-full bg-primary animate-wave origin-bottom"
+            style={{ height: '64px', animationDelay: `${i * 0.07}s`, animationDuration: `${0.7 + (i % 3) * 0.15}s` }} />
+        ))}
+      </div>
+      {/* Text */}
+      <div className="text-center space-y-1.5">
+        <p className="text-base font-semibold text-primary">Analyzing your recording</p>
+        <p className="text-sm text-primary/40">This may take a few seconds…</p>
+      </div>
+      {/* Progress dots */}
+      <div className="flex gap-2">
+        {[0,1,2].map(i => (
+          <div key={i} className="h-2 w-2 rounded-full bg-primary animate-dot-bounce"
+            style={{ animationDelay: `${i * 0.2}s` }} />
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-4">
@@ -511,19 +756,32 @@ export function TranscriptionTab({ lessonId, onPassed }) {
           </div>
         )}
 
+        {/* Rotate hint */}
+        {expectedVex.length > 0 && (
+          <div className="lg:hidden portrait:flex landscape:hidden items-center gap-2 mt-4 text-[11px] text-primary/40">
+            <svg className="h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="4" y="2" width="10" height="16" rx="2" />
+              <path d="M16 9l3 3-3 3" />
+              <path d="M2 15l3 3 3-3" />
+              <path d="M19 12H9" />
+            </svg>
+            <span>Rotate your device to see the full staff</span>
+          </div>
+        )}
+
         {/* Expected staff */}
         {expectedVex.length > 0 && (
-          <div className="mt-4">
+          <div className="mt-3">
             <StaffView vexNotes={expectedVex} clef={expectedClef} label="Notes to play" timeSignature={timeSignature} />
           </div>
         )}
 
         {/* Record controls */}
-        <div className="mt-5 flex flex-wrap items-center gap-3">
+        <div className="mt-5 flex items-center gap-3">
           {recording ? (
             <button
               onClick={stopRecording}
-              className="flex items-center gap-2 rounded-xl bg-red-500 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-red-600"
+              className="flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl bg-red-500 px-4 py-2.5 text-sm font-semibold text-white whitespace-nowrap transition-colors hover:bg-red-600"
             >
               <span className="h-2.5 w-2.5 rounded-sm bg-white" />
               Stop recording
@@ -531,7 +789,7 @@ export function TranscriptionTab({ lessonId, onPassed }) {
           ) : (
             <button
               onClick={startRecording}
-              className="flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary-hover"
+              className="flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white whitespace-nowrap transition-colors hover:bg-primary-hover"
             >
               <span className="h-2.5 w-2.5 rounded-full bg-white" />
               Start recording
@@ -539,7 +797,7 @@ export function TranscriptionTab({ lessonId, onPassed }) {
           )}
 
           {!recording && (
-            <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-primary/20 px-5 py-3 text-sm font-semibold text-primary/70 transition-colors hover:bg-primary/5">
+            <label className="flex flex-1 sm:flex-none cursor-pointer items-center justify-center gap-2 rounded-xl border border-primary/20 px-4 py-2.5 text-sm font-semibold text-primary/70 whitespace-nowrap transition-colors hover:bg-primary/5">
               <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
               </svg>
@@ -553,7 +811,7 @@ export function TranscriptionTab({ lessonId, onPassed }) {
                   if (!file) return;
                   setAudioBlob(file);
                   setAudioUrl(URL.createObjectURL(file));
-                  setResult(null);
+                  onResultChange?.(null);
                   e.target.value = '';
                 }}
               />
@@ -576,25 +834,38 @@ export function TranscriptionTab({ lessonId, onPassed }) {
           </div>
         )}
 
-        {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
+        {error && <ErrorBanner message={error} />}
       </div>
 
-      {/* Submit */}
-      <div className="flex justify-end">
+      <AttemptHistory lessonId={lessonId} refreshTrigger={attemptRefresh} />
+
+      {/* Submit + Skip */}
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+        <button
+          onClick={async () => {
+            setSkipped(true);
+            const token = localStorage.getItem('token');
+            try {
+              const res = await fetch(`${API_BASE}/api/lessons/${lessonId}/transcription/skip`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              if (res.ok) onPassed?.();
+              else console.error('skip failed:', await res.json().catch(() => ({})));
+            } catch (e) {
+              console.error('skip error:', e);
+            }
+          }}
+          className="text-center text-sm text-primary/35 transition-colors hover:text-primary/55 sm:text-left"
+        >
+          I don't have an instrument right now
+        </button>
         <button
           onClick={handleSubmit}
           disabled={!audioBlob || submitting || recording}
-          className="flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          {submitting ? (
-            <>
-              <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-              </svg>
-              Transcribing…
-            </>
-          ) : 'Submit recording'}
+          Submit recording
         </button>
       </div>
     </div>

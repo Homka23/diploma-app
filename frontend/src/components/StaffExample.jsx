@@ -10,48 +10,62 @@ export default function StaffExample({ content }) {
   useEffect(() => {
     if (!containerRef.current || !content?.notes?.length) return;
 
-    const el      = containerRef.current;
-    const style   = window.getComputedStyle(el);
-    const padding = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
-    const width   = Math.max((el.clientWidth - padding) || 560, 200);
+    function render() {
+      const el = containerRef.current;
+      if (!el) return;
 
-    el.innerHTML = '';
+      const style   = window.getComputedStyle(el);
+      const padding = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+      const width   = Math.max((el.clientWidth - padding) || 560, 200);
 
-    const notes  = content.notes;
-    const chunk1 = notes.slice(0, 4);
-    const chunk2 = notes.slice(4);
-    const w1     = chunk2.length > 0 ? Math.round(width * 0.52) : width - 10;
-    const w2     = width - w1 - 10;
+      el.innerHTML = '';
 
-    const renderer = new Renderer(el, Renderer.Backends.SVG);
-    renderer.resize(width, 160);
-    const ctx = renderer.getContext();
+      const notes  = content.notes;
+      const chunk1 = notes.slice(0, 4);
+      const chunk2 = notes.slice(4);
+      const w1     = chunk2.length > 0 ? Math.round(width * 0.52) : width - 10;
+      const w2     = width - w1 - 10;
 
-    const stave1 = new Stave(5, 20, w1);
-    if (content.clef)          stave1.addClef(content.clef);
-    if (content.timeSignature) stave1.addTimeSignature(content.timeSignature);
-    stave1.setContext(ctx).draw();
+      const renderer = new Renderer(el, Renderer.Backends.SVG);
+      renderer.resize(width, 160);
+      const ctx = renderer.getContext();
 
-    const v1 = new Voice({ num_beats: 4, beat_value: 4 }).setStrict(false);
-    v1.addTickables(chunk1.map(n => new StaveNote({ keys: n.keys, duration: n.duration })));
-    new Formatter().joinVoices([v1]).format([v1], w1 - 80);
-    v1.draw(ctx, stave1);
+      const stave1 = new Stave(5, 20, w1);
+      if (content.clef)          stave1.addClef(content.clef);
+      if (content.timeSignature) stave1.addTimeSignature(content.timeSignature);
+      stave1.setContext(ctx).draw();
 
-    if (chunk2.length > 0) {
-      const stave2 = new Stave(5 + w1, 20, w2);
-      stave2.setContext(ctx).draw();
-      const v2 = new Voice({ num_beats: 4, beat_value: 4 }).setStrict(false);
-      v2.addTickables(chunk2.map(n => new StaveNote({ keys: n.keys, duration: n.duration })));
-      new Formatter().joinVoices([v2]).format([v2], w2 - 20);
-      v2.draw(ctx, stave2);
+      const v1 = new Voice({ num_beats: 4, beat_value: 4 }).setStrict(false);
+      v1.addTickables(chunk1.map(n => new StaveNote({ keys: n.keys, duration: n.duration })));
+      new Formatter().joinVoices([v1]).format([v1], w1 - 80);
+      v1.draw(ctx, stave1);
+
+      if (chunk2.length > 0) {
+        const stave2 = new Stave(5 + w1, 20, w2);
+        stave2.setContext(ctx).draw();
+        const v2 = new Voice({ num_beats: 4, beat_value: 4 }).setStrict(false);
+        v2.addTickables(chunk2.map(n => new StaveNote({ keys: n.keys, duration: n.duration })));
+        new Formatter().joinVoices([v2]).format([v2], w2 - 20);
+        v2.draw(ctx, stave2);
+      }
+
+      const svg = el.querySelector('svg');
+      if (svg) {
+        svg.setAttribute('viewBox', `0 0 ${width} 160`);
+        svg.setAttribute('width', '100%');
+        svg.removeAttribute('height');
+      }
     }
 
-    const svg = el.querySelector('svg');
-    if (svg) {
-      svg.setAttribute('viewBox', `0 0 ${width} 160`);
-      svg.setAttribute('width', '100%');
-      svg.removeAttribute('height');
-    }
+    render();
+
+    let rafId = null;
+    const observer = new ResizeObserver(() => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => { render(); rafId = null; });
+    });
+    observer.observe(containerRef.current);
+    return () => { observer.disconnect(); if (rafId) cancelAnimationFrame(rafId); };
   }, [content]);
 
   async function handlePlay() {

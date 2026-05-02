@@ -1,3 +1,4 @@
+import { ErrorBanner } from '../components/ErrorView';
 import { API_BASE } from '../config.js';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -90,7 +91,7 @@ export default function RegisterPage() {
             <input type="password" placeholder="Password"         value={form.password} onChange={set('password')} required className={inputClass} />
             <input type="password" placeholder="Confirm Password" value={form.confirm}  onChange={set('confirm')}  required className={inputClass} />
 
-            {error && <p className="text-xs text-red-500">{error}</p>}
+            {error && <ErrorBanner message={error} />}
 
             <button
               type="submit"

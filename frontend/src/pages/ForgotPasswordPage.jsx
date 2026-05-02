@@ -1,3 +1,4 @@
+import { ErrorBanner } from '../components/ErrorView';
 import { API_BASE } from '../config.js';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -106,7 +107,7 @@ export default function ForgotPasswordPage() {
                   className={inputClass}
                 />
 
-                {error && <p className="text-xs text-red-500">{error}</p>}
+                {error && <ErrorBanner message={error} />}
 
                 <button
                   type="submit"
