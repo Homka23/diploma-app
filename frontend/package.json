@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@react-oauth/google": "^0.13.5",
     "abcjs": "^6.6.2",
     "canvas-confetti": "^1.9.4",
     "react": "^18.3.1",
