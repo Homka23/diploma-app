@@ -870,10 +870,10 @@ function LessonEditor({ lesson, onBack }) {
       </div>
 
       {/* Tab selector */}
-      <div className="flex gap-1 mb-5 bg-gray-100 rounded-xl p-1 w-fit">
+      <div className="flex gap-1 mb-5 bg-gray-100 rounded-xl p-1 w-full sm:w-fit">
         {['theory', 'test', 'transcription'].map(t => (
           <button key={t} onClick={() => setTab(t)}
-            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors capitalize ${
+            className={`flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-sm font-medium transition-colors capitalize ${
               tab === t ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
             }`}>
             {t}
