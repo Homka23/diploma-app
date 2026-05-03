@@ -1,5 +1,4 @@
 import { API_BASE, handleBlocked } from '../config.js';
-import Loader from '../components/Loader';
 import { ErrorScreen } from '../components/ErrorView';
 import { useState, useEffect, useRef } from 'react';
 import confetti from 'canvas-confetti';
@@ -339,7 +338,17 @@ export default function LessonPage() {
         </header>
 
         <main className="mx-auto w-full max-w-5xl px-3 sm:px-6 py-4 sm:py-8">
-          {loading && <Loader />}
+          {loading && (
+            <div className="flex flex-col items-center justify-center py-24 gap-5">
+              <div className="flex items-end gap-[4px] h-10">
+                {[0,1,2,3,4,5,6].map(i => (
+                  <div key={i} className="w-[5px] rounded-full bg-primary animate-wave origin-bottom"
+                    style={{ animationDelay: `${i * 0.1}s`, height: '40px' }} />
+                ))}
+              </div>
+              <p className="text-sm font-medium text-primary/50">Loading…</p>
+            </div>
+          )}
           {error   && <ErrorScreen message={error} />}
 
           {!loading && !error && (
