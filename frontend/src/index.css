@@ -111,24 +111,15 @@ html, body {
   overflow-x: hidden;
 }
 
-/* Metronome ball */
-@keyframes ball-drop {
-  0%   { transform: translateY(0)      scaleX(1)   scaleY(1);   animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
-  48%  { transform: translateY(var(--ball-travel)) scaleX(1) scaleY(1); animation-timing-function: cubic-bezier(0, 0, 0, 1); }
-  52%  { transform: translateY(var(--ball-travel)) scaleX(1.45) scaleY(0.62); }
-  56%  { transform: translateY(var(--ball-travel)) scaleX(1)   scaleY(1);   animation-timing-function: cubic-bezier(0, 0.55, 0.45, 1); }
-  100% { transform: translateY(0)      scaleX(1)   scaleY(1); }
+/* Metronome pendulum */
+@keyframes pendulum-swing {
+  0%   { transform: rotate(-28deg); }
+  50%  { transform: rotate(28deg); }
+  100% { transform: rotate(-28deg); }
 }
-.ball-bounce {
-  animation: ball-drop var(--ball-duration) ease-in-out infinite;
-}
-
-@keyframes shadow-pulse {
-  0%, 100% { transform: scaleX(0.5);  opacity: 0.15; }
-  50%       { transform: scaleX(1.4); opacity: 0.35; }
-}
-.shadow-pulse {
-  animation: shadow-pulse var(--ball-duration) ease-in-out infinite;
+.pendulum-rod {
+  transform-origin: bottom center;
+  animation: pendulum-swing var(--swing-duration) ease-in-out infinite;
 }
 
 .piano-scroll::-webkit-scrollbar {

@@ -106,9 +106,7 @@ export default function MetronomePage() {
     if (!running) startMetronome();
   }
 
-  const beatSec    = 60 / bpm;
-  // Scale travel height with tempo: slower = higher bounce, faster = shorter bounce
-  const ballTravel = Math.max(40, Math.min(180, Math.round(10800 / bpm)));
+  const beatSec = 60 / bpm;
 
   return (
     <div className="min-h-screen bg-[#F4F4F4] flex flex-col">
@@ -137,26 +135,46 @@ export default function MetronomePage() {
           </div>
         </div>
 
-        {/* ── Ball animation area ── */}
-        <div className="relative flex flex-col items-center" style={{ height: `${ballTravel + 64}px`, width: '120px' }}>
-          {/* Ball */}
+        {/* ── Pendulum ── */}
+        <div className="relative flex items-end justify-center" style={{ height: '220px', width: '140px' }}>
+          {/* Left / right tick marks */}
+          <div className="absolute bottom-0 w-full flex justify-between px-4 pointer-events-none">
+            <div className="w-0.5 h-4 rounded-full bg-primary/20" />
+            <div className="w-0.5 h-4 rounded-full bg-primary/20" />
+          </div>
+
+          {/* Rod (rotates around bottom-center) */}
           <div
-            className={`ball-bounce w-14 h-14 rounded-full flex-shrink-0 ${accent ? 'bg-primary' : 'bg-primary/70'} transition-colors duration-75`}
+            className="pendulum-rod absolute bottom-0"
             style={{
-              '--ball-duration': `${beatSec}s`,
-              '--ball-travel':   `${ballTravel}px`,
+              '--swing-duration': `${beatSec * 2}s`,
               animationPlayState: running ? 'running' : 'paused',
-              boxShadow: '0 4px 24px rgba(40,90,72,0.3)',
+              width: '3px',
+              height: '190px',
+              borderRadius: '2px',
+              backgroundColor: accent ? 'var(--color-primary)' : 'rgba(40,90,72,0.55)',
+              transition: 'background-color 75ms',
             }}
-          />
-          {/* Shadow on ground */}
+          >
+            {/* Weight */}
+            <div
+              className="absolute left-1/2 rounded-full"
+              style={{
+                top: '18px',
+                transform: 'translateX(-50%)',
+                width: '24px',
+                height: '24px',
+                backgroundColor: accent ? 'var(--color-primary)' : 'rgba(40,90,72,0.6)',
+                transition: 'background-color 75ms',
+                boxShadow: '0 2px 10px rgba(40,90,72,0.25)',
+              }}
+            />
+          </div>
+
+          {/* Pivot dot */}
           <div
-            className="shadow-pulse absolute bottom-0 left-1/2 h-3 w-14 rounded-full bg-primary/20 blur-sm"
-            style={{
-              '--ball-duration': `${beatSec}s`,
-              animationPlayState: running ? 'running' : 'paused',
-              transform: 'translateX(-50%)',
-            }}
+            className="absolute bottom-0 left-1/2 rounded-full bg-primary/70"
+            style={{ width: '10px', height: '10px', transform: 'translate(-50%, 50%)' }}
           />
         </div>
 
