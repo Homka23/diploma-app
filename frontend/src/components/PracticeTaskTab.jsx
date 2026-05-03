@@ -157,14 +157,12 @@ function Metronome({ bpm = 60, forceStop = false }) {
     click();
     intervalRef.current = setInterval(click, (60 / localBpm) * 1000);
     setRunning(true);
-    onStart?.();
   }
 
   function stop() {
     clearInterval(intervalRef.current);
     setRunning(false);
     setBeat(false);
-    onStop?.();
   }
 
   function toggle() { running ? stop() : start(); }
@@ -609,9 +607,13 @@ export function PracticeTaskTab({ task, onCoinsChange }) {
   return (
     <div className="space-y-4">
       <div className="overflow-hidden rounded-xl bg-white px-6 py-5 shadow-[0_4px_24px_-2px_rgba(0,0,0,0.06),0_1px_4px_-1px_rgba(0,0,0,0.04)]">
-        {task.instruction_text && (
-          <p className="text-[15px] font-medium text-dark mb-3">{task.instruction_text}</p>
-        )}
+        {/* Instruction + metronome on same row */}
+        <div className="flex items-start justify-between gap-3 mb-3">
+          {task.instruction_text && (
+            <p className="text-[15px] font-medium text-dark">{task.instruction_text}</p>
+          )}
+          <Metronome bpm={bpm} forceStop={stopMetronome} />
+        </div>
 
         {expected.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5 mb-1">
@@ -639,11 +641,6 @@ export function PracticeTaskTab({ task, onCoinsChange }) {
             <StaffView vexNotes={expectedVex} label="Notes to play" timeSignature={timeSignature} />
           </div>
         )}
-
-        {/* Metronome */}
-        <div className="mt-4">
-          <Metronome bpm={bpm} forceStop={stopMetronome} />
-        </div>
 
         {/* Record controls */}
         <div className="mt-5 flex items-center gap-3">
