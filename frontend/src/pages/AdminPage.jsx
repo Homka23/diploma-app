@@ -900,7 +900,7 @@ function LessonEditor({ lesson, onBack }) {
             <div className="pt-3 px-1 text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing">
               <GripHandle />
             </div>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0 pr-2">
               <BlockCard block={b}
                 onDelete={() => deleteBlock(b.id)}
                 onSaved={load} />
