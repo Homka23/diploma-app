@@ -2,6 +2,7 @@ import { API_BASE } from '../config.js';
 import { useState, useEffect } from 'react';
 import { getPiano, getAudioCtx } from '../utils/pianoAudio';
 import { ErrorScreen } from './ErrorView';
+import Loader from './Loader';
 
 // ── Piano performance helpers ─────────────────────────────────────────────────
 const SEMITONES  = { C:0, D:2, E:4, F:5, G:7, A:9, B:11 };
@@ -500,7 +501,7 @@ export function QuizTab({ lessonId, onPassed, onProgressChange }) {
     }
   }
 
-  if (loading) return <div className="py-20 text-center text-sm text-primary/30">Loading…</div>;
+  if (loading) return <Loader />;
   if (error)   return <ErrorScreen message={error} onRetry={load} />;
   if (!blocks?.length) return <div className="py-20 text-center text-sm text-primary/30">No test content yet.</div>;
 
