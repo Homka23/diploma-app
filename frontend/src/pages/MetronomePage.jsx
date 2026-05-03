@@ -35,6 +35,7 @@ export default function MetronomePage() {
 
   const [user, setUser]           = useState(null);
   const [profileOpen, setProfile] = useState(false);
+  const [coins, setCoins]         = useState(null);
 
   const [bpm, setBpm]         = useState(120);
   const [running, setRunning] = useState(false);
@@ -47,6 +48,10 @@ export default function MetronomePage() {
     fetch(`${API_BASE}/api/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(d => { if (d.user) { setUser(d.user); localStorage.setItem('user', JSON.stringify(d.user)); } })
+      .catch(() => {});
+    fetch(`${API_BASE}/api/practice/coins`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => { if (d.coins != null) setCoins(d.coins); })
       .catch(() => {});
   }, []);
 
@@ -151,7 +156,16 @@ export default function MetronomePage() {
 
           <span className="text-sm font-semibold text-primary/50 hidden sm:block">Metronome</span>
 
-          {/* User */}
+          {/* Coins + User */}
+          <div className="flex items-center gap-2">
+          {coins !== null && (
+            <div className="flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2.5 py-1">
+              <svg className="h-3.5 w-3.5 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" /><path d="M12 6v2m0 8v2M9 9.5h4.5a1.5 1.5 0 010 3H10a1.5 1.5 0 000 3H15" />
+              </svg>
+              <span className="text-xs font-bold text-amber-600">{coins}</span>
+            </div>
+          )}
           {user && (
             <div className="relative">
               <button onClick={() => setProfile(o => !o)}
@@ -184,6 +198,7 @@ export default function MetronomePage() {
               )}
             </div>
           )}
+          </div>
         </div>
       </header>
 

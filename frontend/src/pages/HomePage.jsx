@@ -216,6 +216,7 @@ export default function HomePage() {
   const [streakDays, setStreakDays] = useState(0);
   const [animStart, setAnimStart]   = useState(false);
   const [practiceStats, setPracticeStats] = useState({ completed: 0, total: 0 });
+  const [coins, setCoins]                 = useState(null);
 
   useEffect(() => {
     const stored = localStorage.getItem('user');
@@ -240,6 +241,10 @@ export default function HomePage() {
     fetch(`${API_BASE}/api/practice/stats`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(d => { if (d.completed != null) setPracticeStats({ completed: d.completed, total: d.total }); })
+      .catch(() => {});
+    fetch(`${API_BASE}/api/practice/coins`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => { if (d.coins != null) setCoins(d.coins); })
       .catch(() => {});
 
     fetch(`${API_BASE}/api/topics`, {
@@ -301,6 +306,15 @@ export default function HomePage() {
             <span className="text-base font-bold text-dark">Music Theory</span>
           </div>
 
+          <div className="flex items-center gap-2">
+          {coins !== null && (
+            <div className="flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2.5 py-1">
+              <svg className="h-3.5 w-3.5 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" /><path d="M12 6v2m0 8v2M9 9.5h4.5a1.5 1.5 0 010 3H10a1.5 1.5 0 000 3H15" />
+              </svg>
+              <span className="text-xs font-bold text-amber-600">{coins}</span>
+            </div>
+          )}
           <div className="relative">
             <button onClick={() => setProfile(o => !o)}
               className="flex items-center gap-2 rounded-xl px-2 py-1.5 transition-colors hover:bg-primary/8">
@@ -331,6 +345,7 @@ export default function HomePage() {
                 </button>
               </div>
             )}
+          </div>
           </div>
         </div>
       </header>

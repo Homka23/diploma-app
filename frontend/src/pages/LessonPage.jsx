@@ -70,6 +70,7 @@ export default function LessonPage() {
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 1024);
   const [user, setUser]               = useState(null);
   const [profileOpen, setProfile]     = useState(false);
+  const [coins, setCoins]             = useState(null);
   const [theoryDone, setTheoryDone]             = useState(false);
   const [testDone, setTestDone]                 = useState(false);
   const [transcriptionDone, setTranscriptionDone] = useState(false);
@@ -94,6 +95,11 @@ export default function LessonPage() {
   useEffect(() => {
     const stored = localStorage.getItem('user');
     if (stored) setUser(JSON.parse(stored));
+    const token = localStorage.getItem('token');
+    fetch(`${API_BASE}/api/practice/coins`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => { if (d.coins != null) setCoins(d.coins); })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -253,6 +259,14 @@ export default function LessonPage() {
               </div>
 
               <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                {coins !== null && (
+                  <div className="flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2.5 py-1">
+                    <svg className="h-3.5 w-3.5 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10" /><path d="M12 6v2m0 8v2M9 9.5h4.5a1.5 1.5 0 010 3H10a1.5 1.5 0 000 3H15" />
+                    </svg>
+                    <span className="text-xs font-bold text-amber-600">{coins}</span>
+                  </div>
+                )}
                 {!sidebarOpen && (
                   <Link
                     to="/home"
