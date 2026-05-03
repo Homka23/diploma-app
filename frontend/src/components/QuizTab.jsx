@@ -2,7 +2,6 @@ import { API_BASE } from '../config.js';
 import { useState, useEffect } from 'react';
 import { getPiano, getAudioCtx } from '../utils/pianoAudio';
 import { ErrorScreen } from './ErrorView';
-import Loader from './Loader';
 
 // ── Piano performance helpers ─────────────────────────────────────────────────
 const SEMITONES  = { C:0, D:2, E:4, F:5, G:7, A:9, B:11 };
@@ -501,7 +500,17 @@ export function QuizTab({ lessonId, onPassed, onProgressChange }) {
     }
   }
 
-  if (loading) return <Loader />;
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center py-24 gap-5">
+      <div className="flex items-end gap-[4px] h-10">
+        {[0,1,2,3,4,5,6].map(i => (
+          <div key={i} className="w-[5px] rounded-full bg-primary animate-wave origin-bottom"
+            style={{ animationDelay: `${i * 0.1}s`, height: '40px' }} />
+        ))}
+      </div>
+      <p className="text-sm font-medium text-primary/50">Loading…</p>
+    </div>
+  );
   if (error)   return <ErrorScreen message={error} onRetry={load} />;
   if (!blocks?.length) return <div className="py-20 text-center text-sm text-primary/30">No test content yet.</div>;
 
