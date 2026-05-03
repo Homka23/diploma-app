@@ -761,7 +761,7 @@ function BlockCard({ block, onDelete, onSaved }) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
       <div className="flex items-center gap-1.5 sm:gap-3 px-2 sm:px-4 py-3">
-        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${badge}`}>{TYPE_LABELS[block.blockType]}</span>
+        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 truncate max-w-[80px] sm:max-w-none ${badge}`}>{TYPE_LABELS[block.blockType]}</span>
         <span className="text-xs text-gray-400 flex-shrink-0">#{block.position}</span>
         <input className="flex-1 min-w-0 text-sm border-0 outline-none bg-transparent text-gray-700 placeholder-gray-300"
           placeholder="Block title (optional)" value={title}
