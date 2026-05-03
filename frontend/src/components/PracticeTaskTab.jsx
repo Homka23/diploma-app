@@ -121,7 +121,7 @@ function StaffView({ vexNotes, clef = 'treble', label, timeSignature }) {
 }
 
 // ── Metronome ─────────────────────────────────────────────────────────────────
-function Metronome({ bpm = 60, forceStop = false }) {
+function Metronome({ bpm = 60 }) {
   const [running, setRunning]   = useState(false);
   const [beat, setBeat]         = useState(false);
   const [localBpm, setLocalBpm] = useState(bpm);
@@ -129,11 +129,6 @@ function Metronome({ bpm = 60, forceStop = false }) {
   const audioCtxRef  = useRef(null);
 
   useEffect(() => { setLocalBpm(bpm); }, [bpm]);
-
-  // stop when parent requests it (e.g. recording starts)
-  useEffect(() => {
-    if (forceStop && running) stop();
-  }, [forceStop]);
 
   // stop on unmount
   useEffect(() => () => { clearInterval(intervalRef.current); }, []);
@@ -506,10 +501,7 @@ export function PracticeTaskTab({ task, onCoinsChange }) {
     setRecording(false);
   }, [task.id]);
 
-  const [stopMetronome, setStopMetronome] = useState(false);
-
   async function startRecording() {
-    setStopMetronome(true);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mr = new MediaRecorder(stream);
@@ -529,8 +521,6 @@ export function PracticeTaskTab({ task, onCoinsChange }) {
       setResult(null);
     } catch {
       setError('Microphone access denied');
-    } finally {
-      setStopMetronome(false);
     }
   }
 
@@ -643,7 +633,7 @@ export function PracticeTaskTab({ task, onCoinsChange }) {
 
         {/* Metronome */}
         <div className="mt-4">
-          <Metronome bpm={bpm} forceStop={stopMetronome} />
+          <Metronome bpm={bpm} />
         </div>
 
         {/* Record controls */}
