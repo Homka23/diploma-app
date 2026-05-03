@@ -6,8 +6,8 @@ import { getPracticeTranscriptions, submitPracticeTranscription, getPracticeAtte
 const router = Router();
 const upload = multer({ dest: 'uploads/' });
 
-router.get ('transcription',                          requireAuth, getPracticeTranscriptions);
-router.post('transcription/:lessonId/submit',         requireAuth, upload.single('audio'), submitPracticeTranscription);
-router.get ('transcription/:lessonId/attempts',       requireAuth, getPracticeAttempts);
+router.get ('/transcription',                          requireAuth, getPracticeTranscriptions);
+router.post('/transcription/:lessonId/submit',         requireAuth, upload.single('audio'), submitPracticeTranscription);
+router.get ('/transcription/:lessonId/attempts',       requireAuth, getPracticeAttempts);
 
 export default router;
