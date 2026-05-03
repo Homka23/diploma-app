@@ -386,24 +386,6 @@ export default function HomePage() {
             </Link>
           )}
 
-          {/* Practice */}
-          <Link to="/practice"
-            className="flex items-center justify-between gap-4 rounded-xl border border-primary/10 bg-white px-5 py-4 transition-all duration-200 hover:border-primary/25 hover:shadow-md sm:flex-shrink-0">
-            <div className="min-w-0">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-primary/40 mb-0.5">Free practice</p>
-              <p className="font-semibold text-primary">Transcription</p>
-              <p className="text-xs text-primary/40 mt-0.5">Choose any task</p>
-            </div>
-            <div className="flex flex-shrink-0 items-center justify-center h-10 w-10 rounded-xl bg-primary/8 text-primary/50">
-              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                <line x1="12" y1="19" x2="12" y2="23" />
-                <line x1="8" y1="23" x2="16" y2="23" />
-              </svg>
-            </div>
-          </Link>
-
           {/* Streak */}
           <div className="flex flex-col justify-between rounded-xl border border-primary/10 bg-white px-4 py-3.5 sm:w-[320px] sm:flex-shrink-0">
             <div className="flex items-baseline gap-1.5 mb-2.5">
@@ -440,6 +422,29 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+
+        {/* ── Practice ── */}
+        <Link to="/practice"
+          className="flex items-center justify-between gap-3 rounded-xl border border-primary/10 bg-white px-4 py-3 transition-all hover:border-primary/25 hover:shadow-sm animate-fade-slide-up"
+          style={{ animationDelay: '210ms' }}>
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex-shrink-0 flex items-center justify-center h-8 w-8 rounded-lg bg-primary/8 text-primary/50">
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                <line x1="12" y1="19" x2="12" y2="23" />
+                <line x1="8" y1="23" x2="16" y2="23" />
+              </svg>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-primary">Free Transcription Practice</span>
+              <p className="text-xs text-primary/40">Choose any task and practice anytime</p>
+            </div>
+          </div>
+          <svg className="h-4 w-4 text-primary/30 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
+        </Link>
 
         {/* ── Curriculum ── */}
         <div className="animate-fade-slide-up" style={{ animationDelay: '240ms' }}>
