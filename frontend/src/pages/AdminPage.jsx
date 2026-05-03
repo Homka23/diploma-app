@@ -769,7 +769,9 @@ function BlockCard({ block, onDelete, onSaved }) {
           onBlur={saveTitle}
           disabled={saving}
         />
-        <Btn variant="ghost" className="flex-shrink-0" onClick={() => setOpen(o => !o)}>{open ? 'Close' : <><Pencil />Edit</>}</Btn>
+        <Btn variant="ghost" className="flex-shrink-0" onClick={() => setOpen(o => !o)}>
+          {open ? <><span className="hidden sm:inline">Close</span><span className="sm:hidden">✕</span></> : <><Pencil /><span className="hidden sm:inline">Edit</span></>}
+        </Btn>
         <Btn variant="danger" className="flex-shrink-0" onClick={() => setDlg(true)}><Trash /></Btn>
       </div>
 
