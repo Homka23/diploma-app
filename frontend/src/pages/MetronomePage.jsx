@@ -135,22 +135,46 @@ export default function MetronomePage() {
           </div>
         </div>
 
-        {/* ── Pulse circle ── */}
-        <div className="relative flex items-center justify-center" style={{ height: '160px', width: '160px' }}>
-          {/* Ripple ring */}
-          {accent && (
-            <div className="absolute rounded-full border-2 border-primary/30 pulse-ring"
-              style={{ width: '120px', height: '120px' }} />
-          )}
-          {/* Main circle */}
+        {/* ── Pendulum ── */}
+        <div className="relative flex items-end justify-center" style={{ height: '220px', width: '140px' }}>
+          {/* Left / right tick marks */}
+          <div className="absolute bottom-0 w-full flex justify-between px-4 pointer-events-none">
+            <div className="w-0.5 h-4 rounded-full bg-primary/20" />
+            <div className="w-0.5 h-4 rounded-full bg-primary/20" />
+          </div>
+
+          {/* Rod (rotates around bottom-center) */}
           <div
-            className="rounded-full transition-all duration-75"
+            className="pendulum-rod absolute bottom-0"
             style={{
-              width:  accent ? '88px' : '72px',
-              height: accent ? '88px' : '72px',
-              backgroundColor: accent ? 'var(--color-primary)' : 'rgba(40,90,72,0.18)',
-              boxShadow: accent ? '0 0 32px rgba(40,90,72,0.35)' : 'none',
+              '--swing-duration': `${beatSec * 2}s`,
+              animationPlayState: running ? 'running' : 'paused',
+              width: '3px',
+              height: '190px',
+              borderRadius: '2px',
+              backgroundColor: accent ? 'var(--color-primary)' : 'rgba(40,90,72,0.55)',
+              transition: 'background-color 75ms',
             }}
+          >
+            {/* Weight */}
+            <div
+              className="absolute left-1/2 rounded-full"
+              style={{
+                top: '18px',
+                transform: 'translateX(-50%)',
+                width: '24px',
+                height: '24px',
+                backgroundColor: accent ? 'var(--color-primary)' : 'rgba(40,90,72,0.6)',
+                transition: 'background-color 75ms',
+                boxShadow: '0 2px 10px rgba(40,90,72,0.25)',
+              }}
+            />
+          </div>
+
+          {/* Pivot dot */}
+          <div
+            className="absolute bottom-0 left-1/2 rounded-full bg-primary/70"
+            style={{ width: '10px', height: '10px', transform: 'translate(-50%, 50%)' }}
           />
         </div>
 
