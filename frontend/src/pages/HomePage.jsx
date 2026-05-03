@@ -423,11 +423,24 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* ── Practice ── */}
-        <Link to="/practice"
-          className="flex items-center justify-between gap-3 rounded-xl border border-primary/10 bg-white px-4 py-3 transition-all hover:border-primary/25 hover:shadow-sm animate-fade-slide-up"
-          style={{ animationDelay: '210ms' }}>
-          <div className="flex items-center gap-3 min-w-0">
+        {/* ── Tools row ── */}
+        <div className="flex gap-2 animate-fade-slide-up" style={{ animationDelay: '210ms' }}>
+
+          {/* Metronome */}
+          <Link to="/metronome"
+            className="flex-1 flex items-center gap-3 rounded-xl border border-primary/10 bg-white px-4 py-3 transition-all hover:border-primary/25 hover:shadow-sm">
+            <div className="flex-shrink-0 flex items-center justify-center h-8 w-8 rounded-lg bg-primary/8 text-primary/50">
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2v4M12 18v4M6 6l2.5 2.5M15.5 15.5L18 18M2 12h4M18 12h4M6 18l2.5-2.5M15.5 8.5L18 6"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </div>
+            <span className="text-sm font-medium text-primary">Metronome</span>
+          </Link>
+
+          {/* Practice */}
+          <Link to="/practice"
+            className="flex-1 flex items-center gap-3 rounded-xl border border-primary/10 bg-white px-4 py-3 transition-all hover:border-primary/25 hover:shadow-sm">
             <div className="flex-shrink-0 flex items-center justify-center h-8 w-8 rounded-lg bg-primary/8 text-primary/50">
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
@@ -436,15 +449,10 @@ export default function HomePage() {
                 <line x1="8" y1="23" x2="16" y2="23" />
               </svg>
             </div>
-            <div>
-              <span className="text-sm font-medium text-primary">Free Transcription Practice</span>
-              <p className="text-xs text-primary/40">Choose any task and practice anytime</p>
-            </div>
-          </div>
-          <svg className="h-4 w-4 text-primary/30 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-          </svg>
-        </Link>
+            <span className="text-sm font-medium text-primary">Practice</span>
+          </Link>
+
+        </div>
 
         {/* ── Curriculum ── */}
         <div className="animate-fade-slide-up" style={{ animationDelay: '240ms' }}>

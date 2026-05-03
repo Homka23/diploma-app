@@ -8,6 +8,7 @@ import LessonPage           from './pages/LessonPage';
 import ProfilePage          from './pages/ProfilePage';
 import AdminPage            from './pages/AdminPage';
 import PracticePage         from './pages/PracticePage';
+import MetronomePage        from './pages/MetronomePage';
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
       <Route path="/profile"          element={<ProfilePage />} />
       <Route path="/admin"            element={<AdminPage />} />
       <Route path="/practice"         element={<PracticePage />} />
+      <Route path="/metronome"        element={<MetronomePage />} />
       <Route path="*"                 element={<Navigate to="/login" replace />} />
     </Routes>
   );
