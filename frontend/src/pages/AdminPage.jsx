@@ -1270,7 +1270,7 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* top bar */}
-      <header className="bg-white border-b border-gray-200 px-3 sm:px-6 py-3 flex items-center gap-2 sm:gap-4 overflow-x-auto">
+      <header className="bg-white border-b border-gray-200 px-3 sm:px-6 py-3 flex flex-wrap items-center gap-x-2 gap-y-1 sm:gap-x-4">
         <span className="text-sm font-bold text-[#408A71] flex-shrink-0">Admin</span>
         <span className="text-gray-300 flex-shrink-0">|</span>
         <button onClick={() => { setView('topics'); setTopic(null); setLesson(null); }}
