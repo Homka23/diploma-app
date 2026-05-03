@@ -311,10 +311,7 @@ export default function HomePage() {
                   className="block px-4 py-2.5 text-sm text-primary/70 transition-colors hover:bg-[#f7f7f7] hover:text-primary">
                   Profile
                 </Link>
-                <Link to="/change-password"
-                  className="block px-4 py-2.5 text-sm text-primary/70 transition-colors hover:bg-[#f7f7f7] hover:text-primary">
-                  Change Password
-                </Link>
+
                 {user?.role === 'admin' && (
                   <Link to="/admin"
                     className="block px-4 py-2.5 text-sm text-[#408A71] font-medium transition-colors hover:bg-[#f7f7f7]">
