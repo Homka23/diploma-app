@@ -1,7 +1,12 @@
 import { API_BASE } from '../config.js';
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { PracticeTaskTab } from '../components/PracticeTaskTab';
+
+function initials(user) {
+  const name = user?.display_name || user?.username || user?.email || '?';
+  return name.slice(0, 2).toUpperCase();
+}
 
 function MicIcon({ className = 'h-4 w-4' }) {
   return (
@@ -163,6 +168,9 @@ function EmptyTask() {
 export default function PracticePage() {
   const navigate = useNavigate();
 
+  const [user, setUser]           = useState(null);
+  const [profileOpen, setProfile] = useState(false);
+
   const [topics, setTopics]             = useState(null);
   const [topicsLoading, setTopicsLoading] = useState(true);
   const [topicsError, setTopicsError]   = useState('');
@@ -177,6 +185,23 @@ export default function PracticePage() {
 
   // mobile: 'lessons' | 'tasks' | 'practice'
   const [mobileView, setMobileView]     = useState('lessons');
+
+  // ── load user ──
+  useEffect(() => {
+    const stored = localStorage.getItem('user');
+    if (stored) setUser(JSON.parse(stored));
+    const token = localStorage.getItem('token');
+    fetch(`${API_BASE}/api/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => { if (d.user) { setUser(d.user); localStorage.setItem('user', JSON.stringify(d.user)); } })
+      .catch(() => {});
+  }, []);
+
+  function logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
+  }
 
   // ── load topics + lessons ──
   useEffect(() => {
@@ -244,35 +269,77 @@ export default function PracticePage() {
     <div className="h-screen flex flex-col bg-[#F4F4F4] overflow-hidden">
 
       {/* ── Header ── */}
-      <header className="bg-white border-b border-primary/10 px-4 sm:px-6 py-3 flex items-center gap-3 flex-shrink-0">
-        {/* Mobile back */}
-        <button onClick={handleBack} className="text-primary/40 hover:text-primary transition-colors md:hidden">
-          <BackIcon />
-        </button>
-        {/* Desktop back */}
-        <button onClick={() => navigate('/home')} className="text-primary/40 hover:text-primary transition-colors hidden md:block">
-          <BackIcon />
-        </button>
+      <header className="sticky top-0 z-20 border-b border-primary/10 bg-[#f7f7f7]/95 backdrop-blur-sm flex-shrink-0">
+        <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 sm:px-6 py-3.5">
 
-        <div className="min-w-0 flex items-center gap-2 flex-1">
-          {/* Desktop breadcrumb */}
-          <h1 className="font-semibold text-primary hidden md:block flex-shrink-0">Transcription Practice</h1>
-          {selectedLesson && <span className="hidden md:inline text-primary/30 flex-shrink-0">/</span>}
-          {selectedLesson && <span className="hidden md:inline text-sm text-primary/60 truncate">{selectedLesson.title}</span>}
-          {selectedTask   && <span className="hidden md:inline text-primary/30 flex-shrink-0">/</span>}
-          {selectedTask   && <span className="hidden md:inline text-sm text-primary/60 truncate">{selectedTask.title || 'Task'}</span>}
+          {/* Logo + title */}
+          <button onClick={() => navigate('/home')} className="flex items-center gap-2.5 hover:opacity-80 transition-opacity flex-shrink-0">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+              <svg className="h-4 w-4 text-white" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z" />
+              </svg>
+            </div>
+            <span className="text-base font-bold text-dark hidden sm:block">Music Theory</span>
+          </button>
+
+          {/* Mobile back */}
+          <button onClick={handleBack} className="text-primary/40 hover:text-primary transition-colors md:hidden ml-1">
+            <BackIcon />
+          </button>
+
+          {/* Breadcrumb (desktop) */}
+          <div className="min-w-0 hidden md:flex items-center gap-2 flex-1 ml-2">
+            <span className="text-primary/30">/</span>
+            <span className="text-sm font-semibold text-primary/70 flex-shrink-0">Practice</span>
+            {selectedLesson && <><span className="text-primary/30 flex-shrink-0">/</span><span className="text-sm text-primary/50 truncate">{selectedLesson.title}</span></>}
+            {selectedTask   && <><span className="text-primary/30 flex-shrink-0">/</span><span className="text-sm text-primary/50 truncate">{selectedTask.title || 'Task'}</span></>}
+          </div>
 
           {/* Mobile title */}
-          <span className="md:hidden text-sm font-semibold text-primary truncate">{mobileTitle}</span>
-        </div>
+          <span className="md:hidden text-sm font-semibold text-primary truncate flex-1">{mobileTitle}</span>
 
-        {/* Coins badge */}
-        {coins !== null && (
-          <div className="flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200 px-3 py-1 flex-shrink-0">
-            <CoinIcon className="h-3.5 w-3.5 text-amber-500" />
-            <span className="text-xs font-bold text-amber-600">{coins}</span>
-          </div>
-        )}
+          {/* Coins badge */}
+          {coins !== null && (
+            <div className="flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200 px-3 py-1 flex-shrink-0">
+              <CoinIcon className="h-3.5 w-3.5 text-amber-500" />
+              <span className="text-xs font-bold text-amber-600">{coins}</span>
+            </div>
+          )}
+
+          {/* User dropdown */}
+          {user && (
+            <div className="relative flex-shrink-0">
+              <button onClick={() => setProfile(o => !o)}
+                className="flex items-center gap-2 rounded-xl px-2 py-1.5 transition-colors hover:bg-primary/8">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-white">
+                  {initials(user)}
+                </div>
+                <span className="hidden text-sm font-medium text-dark sm:block">
+                  {user.display_name || user.username || user.email?.split('@')[0]}
+                </span>
+                <svg className={`h-3.5 w-3.5 text-primary/40 transition-transform ${profileOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+              {profileOpen && (
+                <div className="absolute right-0 top-full mt-2 w-44 overflow-hidden rounded-xl border border-primary/12 bg-white shadow-lg shadow-primary/8 z-50">
+                  <Link to="/profile" className="block px-4 py-2.5 text-sm text-primary/70 transition-colors hover:bg-[#f7f7f7] hover:text-primary">
+                    Profile
+                  </Link>
+                  {user?.role === 'admin' && (
+                    <Link to="/admin" className="block px-4 py-2.5 text-sm text-[#408A71] font-medium transition-colors hover:bg-[#f7f7f7]">
+                      Admin panel
+                    </Link>
+                  )}
+                  <div className="mx-3 h-px bg-primary/8" />
+                  <button onClick={logout} className="w-full px-4 py-2.5 text-left text-sm text-red-400 transition-colors hover:bg-red-50 hover:text-red-500">
+                    Log out
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </header>
 
       {/* ── Body ── */}
