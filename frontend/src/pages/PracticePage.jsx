@@ -181,6 +181,7 @@ export default function PracticePage() {
                 testDone={true}
                 nextLesson={null}
                 onPassed={() => {}}
+                practiceMode={true}
               />
             </div>
           ) : (

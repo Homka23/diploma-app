@@ -446,13 +446,13 @@ function ScoreScreen({ scorePercent, passed, recognized, expected, notes, lesson
 }
 
 // ── Attempt history ───────────────────────────────────────────────────────────
-function AttemptHistory({ lessonId, refreshTrigger }) {
+function AttemptHistory({ lessonId, refreshTrigger, practiceMode = false }) {
   const [attempts, setAttempts] = useState([]);
   const [open, setOpen]         = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    fetch(`${API_BASE}/api/lessons/${lessonId}/transcription/attempts`, {
+    fetch(`${API_BASE}/api/${practiceMode ? `practice/transcription/${lessonId}/attempts` : `lessons/${lessonId}/transcription/attempts`}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(r => r.json())
@@ -544,7 +544,7 @@ function AttemptHistory({ lessonId, refreshTrigger }) {
 }
 
 // ── Main tab ──────────────────────────────────────────────────────────────────
-export function TranscriptionTab({ lessonId, onPassed, result, onResultChange, theoryDone = false, testDone = false, nextLesson = null, onNavigate }) {
+export function TranscriptionTab({ lessonId, onPassed, result, onResultChange, theoryDone = false, testDone = false, nextLesson = null, onNavigate, practiceMode = false }) {
   const navigate = useNavigate();
   const canGoNext = theoryDone && testDone && !nextLesson?.locked;
   const goNext = () => onNavigate ? onNavigate(`/lesson/${nextLesson.id}?tab=theory`) : navigate(`/lesson/${nextLesson.id}?tab=theory`);
@@ -612,7 +612,7 @@ export function TranscriptionTab({ lessonId, onPassed, result, onResultChange, t
     const formData = new FormData();
     formData.append('audio', audioBlob, 'recording.webm');
     try {
-      const res  = await fetch(`${API_BASE}/api/lessons/${lessonId}/transcription/submit`, {
+      const res  = await fetch(`${API_BASE}/api/${practiceMode ? `practice/transcription/${lessonId}/submit` : `lessons/${lessonId}/transcription/submit`}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -837,29 +837,31 @@ export function TranscriptionTab({ lessonId, onPassed, result, onResultChange, t
         {error && <ErrorBanner message={error} />}
       </div>
 
-      <AttemptHistory lessonId={lessonId} refreshTrigger={attemptRefresh} />
+      <AttemptHistory lessonId={lessonId} refreshTrigger={attemptRefresh} practiceMode={practiceMode} />
 
       {/* Submit + Skip */}
       <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-        <button
-          onClick={async () => {
-            setSkipped(true);
-            const token = localStorage.getItem('token');
-            try {
-              const res = await fetch(`${API_BASE}/api/lessons/${lessonId}/transcription/skip`, {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${token}` },
-              });
-              if (res.ok) onPassed?.();
-              else console.error('skip failed:', await res.json().catch(() => ({})));
-            } catch (e) {
-              console.error('skip error:', e);
-            }
-          }}
-          className="text-center text-sm text-primary/35 transition-colors hover:text-primary/55 sm:text-left"
-        >
-          I don't have an instrument right now
-        </button>
+        {!practiceMode && (
+          <button
+            onClick={async () => {
+              setSkipped(true);
+              const token = localStorage.getItem('token');
+              try {
+                const res = await fetch(`${API_BASE}/api/lessons/${lessonId}/transcription/skip`, {
+                  method: 'POST',
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (res.ok) onPassed?.();
+                else console.error('skip failed:', await res.json().catch(() => ({})));
+              } catch (e) {
+                console.error('skip error:', e);
+              }
+            }}
+            className="text-center text-sm text-primary/35 transition-colors hover:text-primary/55 sm:text-left"
+          >
+            I don't have an instrument right now
+          </button>
+        )}
         <button
           onClick={handleSubmit}
           disabled={!audioBlob || submitting || recording}
