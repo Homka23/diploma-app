@@ -67,12 +67,33 @@ export async function getPracticeTranscriptions(_req, res) {
 export async function getTasksForLesson(req, res) {
   const lessonId = parseInt(req.query.lessonId, 10);
   if (isNaN(lessonId)) return res.status(400).json({ error: 'Missing lessonId' });
+  const userId = req.user.userId;
   const { rows } = await pool.query(
-    `SELECT id, title, instruction_text, expected_json, position
-     FROM practice_tasks WHERE lesson_id = $1 ORDER BY position, id`,
-    [lessonId],
+    `SELECT pt.id, pt.title, pt.instruction_text, pt.expected_json, pt.position,
+       EXISTS(
+         SELECT 1 FROM practice_task_attempts pta
+         WHERE pta.task_id = pt.id AND pta.user_id = $2 AND pta.passed = true
+       ) AS passed
+     FROM practice_tasks pt WHERE pt.lesson_id = $1 ORDER BY pt.position, pt.id`,
+    [lessonId, userId],
   );
   res.json({ tasks: rows });
+}
+
+// ── GET /api/practice/stats ────────────────────────────────────────────────────
+
+export async function getPracticeStats(req, res) {
+  const userId = req.user.userId;
+  const { rows } = await pool.query(
+    `SELECT
+       COUNT(DISTINCT pt.id)::int AS total,
+       COUNT(DISTINCT pta.task_id)::int AS completed
+     FROM practice_tasks pt
+     LEFT JOIN practice_task_attempts pta
+       ON pta.task_id = pt.id AND pta.user_id = $1 AND pta.passed = true`,
+    [userId],
+  );
+  res.json({ completed: rows[0].completed, total: rows[0].total });
 }
 
 // ── POST /api/practice/tasks/:taskId/submit ───────────────────────────────────

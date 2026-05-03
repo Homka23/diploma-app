@@ -146,39 +146,32 @@ function TaskList({ tasks, loading, selectedTask, onSelect }) {
   );
 
   return (
-    <div className="space-y-2 p-4">
+    <div className="py-2">
       {tasks.map((task, i) => {
         const active = selectedTask?.id === task.id;
         return (
           <button key={task.id} onClick={() => onSelect(task)}
-            className={`w-full text-left rounded-xl px-4 py-3.5 transition-colors border
+            className={`flex w-full items-center py-2.5 pl-4 pr-4 text-left transition-all duration-200
               ${active
-                ? 'bg-primary/8 border-primary/20 text-primary'
-                : 'bg-white border-primary/8 text-primary/80 hover:bg-primary/4 hover:border-primary/15'
+                ? 'border-r-2 border-[#408A71] bg-[#408A71]/8'
+                : 'border-r-2 border-transparent hover:translate-x-1 hover:border-[#408A71]/30'
               }`}>
-            <div className="flex items-center gap-3">
-              <span className={`text-xs font-bold w-5 text-right flex-shrink-0 ${active ? 'text-primary' : 'text-primary/30'}`}>
-                {i + 1}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className={`text-sm font-semibold truncate ${active ? 'text-primary' : 'text-primary/80'}`}>
-                  {task.title || `Task ${i + 1}`}
-                </p>
-                {task.instruction_text && (
-                  <p className="text-xs text-primary/45 truncate mt-0.5">{task.instruction_text}</p>
-                )}
-              </div>
-              {task.expected_json?.notes?.length > 0 && (
-                <div className="flex gap-1 flex-shrink-0">
-                  {task.expected_json.notes.slice(0, 4).map((n, j) => (
-                    <span key={j} className="text-[10px] font-semibold rounded bg-primary/8 px-1.5 py-0.5 text-primary/60">{n}</span>
-                  ))}
-                  {task.expected_json.notes.length > 4 && (
-                    <span className="text-[10px] font-semibold rounded bg-primary/8 px-1.5 py-0.5 text-primary/40">+{task.expected_json.notes.length - 4}</span>
-                  )}
-                </div>
+            <span className={`text-xs font-bold w-5 text-right flex-shrink-0 mr-3 ${active ? 'text-primary' : 'text-primary/30'}`}>
+              {i + 1}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className={`text-[14px] leading-snug ${active ? 'font-semibold text-[#408A71]' : 'text-dark/60'}`}>
+                {task.title || `Task ${i + 1}`}
+              </p>
+              {task.instruction_text && (
+                <p className="text-xs text-primary/40 truncate mt-0.5">{task.instruction_text}</p>
               )}
             </div>
+            {task.passed && (
+              <svg className="h-4 w-4 flex-shrink-0 ml-2 text-[#408A71]" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+            )}
           </button>
         );
       })}

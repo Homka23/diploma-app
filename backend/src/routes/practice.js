@@ -8,6 +8,7 @@ import {
   getTaskAttempts,
   getUserCoins,
   getTaskFeedback,
+  getPracticeStats,
   submitPracticeTranscription,
   getPracticeAttempts,
 } from '../controllers/practice.js';
@@ -21,6 +22,7 @@ router.get ('/tasks',                            requireAuth, getTasksForLesson)
 router.post('/tasks/:taskId/submit',             requireAuth, upload.single('audio'), submitTaskAttempt);
 router.get ('/tasks/:taskId/attempts',           requireAuth, getTaskAttempts);
 router.get ('/coins',                            requireAuth, getUserCoins);
+router.get ('/stats',                            requireAuth, getPracticeStats);
 router.post('/tasks/:taskId/feedback',           requireAuth, getTaskFeedback);
 
 // Legacy (returns 410)

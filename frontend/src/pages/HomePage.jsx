@@ -215,6 +215,7 @@ export default function HomePage() {
   const [loading, setLoading]       = useState(true);
   const [streakDays, setStreakDays] = useState(0);
   const [animStart, setAnimStart]   = useState(false);
+  const [practiceStats, setPracticeStats] = useState({ completed: 0, total: 0 });
 
   useEffect(() => {
     const stored = localStorage.getItem('user');
@@ -234,6 +235,11 @@ export default function HomePage() {
     })
       .then(r => r.json())
       .then(d => { if (d.streakDays != null) setStreakDays(d.streakDays); })
+      .catch(() => {});
+
+    fetch(`${API_BASE}/api/practice/stats`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => { if (d.completed != null) setPracticeStats({ completed: d.completed, total: d.total }); })
       .catch(() => {});
 
     fetch(`${API_BASE}/api/topics`, {
@@ -345,9 +351,9 @@ export default function HomePage() {
 
         {/* ── Stats ── */}
         <div className="hidden sm:grid grid-cols-3 gap-2.5 animate-fade-slide-up" style={{ animationDelay: '80ms' }}>
-          <StatCard label="Topics"  done={completedTopics}  total={topics.length} trigger={animStart} />
-          <StatCard label="Lessons" done={completedLessons} total={totalLessons}  trigger={animStart} />
-          <StatCard label="Tasks"   done={completedTabs}    total={totalTabs}     trigger={animStart} />
+          <StatCard label="Topics"  done={completedTopics}         total={topics.length}          trigger={animStart} />
+          <StatCard label="Lessons" done={completedLessons}        total={totalLessons}           trigger={animStart} />
+          <StatCard label="Tasks"   done={practiceStats.completed} total={practiceStats.total}    trigger={animStart} />
         </div>
 
         {/* Stats mobile */}
@@ -355,7 +361,7 @@ export default function HomePage() {
           {[
             { label: 'Topics',  done: completedTopics,  total: topics.length },
             { label: 'Lessons', done: completedLessons, total: totalLessons  },
-            { label: 'Tasks',   done: completedTabs,    total: totalTabs     },
+            { label: 'Tasks',   done: practiceStats.completed, total: practiceStats.total },
           ].map((s, i) => (
             <div key={s.label} className={`flex-1 text-center ${i !== 2 ? 'border-r border-primary/10' : ''}`}>
               <p className="text-xl font-bold text-primary">{s.done}<span className="text-xs font-medium text-primary/30 ml-0.5">/{s.total}</span></p>
