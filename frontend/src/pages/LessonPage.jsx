@@ -227,7 +227,7 @@ export default function LessonPage() {
 
         {/* Header */}
         <header className="sticky top-0 z-20 border-b border-primary/10 bg-[#f7f7f7]">
-          <div className={`px-4 sm:px-6 lg:px-10 transition-all duration-300 ${scrolled ? 'pt-2 pb-1' : 'pt-3 pb-2 sm:pt-4 sm:pb-3'}`}>
+          <div className={`px-4 sm:px-6 lg:px-10 transition-all duration-300 ${scrolled ? 'pt-2 pb-1' : 'pt-3 pb-2 sm:pt-4 sm:pb-3 landscape:pt-1.5 landscape:pb-1'}`}>
 
             <div className={`flex items-center justify-between transition-all duration-300 ${scrolled ? 'mt-0' : 'mt-2 sm:mt-3'}`}>
               <div className="flex items-center gap-2 sm:gap-4 min-w-0">
@@ -300,7 +300,7 @@ export default function LessonPage() {
 
           </div>
 
-          <div className={`overflow-hidden transition-all duration-300 ease-in-out px-4 sm:px-6 lg:px-10 ${scrolled ? 'max-h-0 opacity-0 mt-0' : 'max-h-24 opacity-100 mt-2'}`}>
+          <div className={`overflow-hidden transition-all duration-300 ease-in-out px-4 sm:px-6 lg:px-10 landscape:hidden ${scrolled ? 'max-h-0 opacity-0 mt-0' : 'max-h-24 opacity-100 mt-2 lg:landscape:block'}`}>
             <h1 className="text-2xl sm:text-4xl font-semibold text-[#285A48] truncate">{lessonTitle}</h1>
           </div>
 
@@ -310,7 +310,7 @@ export default function LessonPage() {
               <button
                 key={t.key}
                 onClick={() => setTab(t.key)}
-                className={`relative flex items-center gap-1.5 px-2 sm:px-3 py-3.5 mr-4 sm:mr-8 text-sm sm:text-base font-medium transition-colors ${
+                className={`relative flex items-center gap-1.5 px-2 sm:px-3 py-3.5 landscape:py-2 mr-4 sm:mr-8 text-sm sm:text-base font-medium transition-colors ${
                   tab === t.key
                     ? 'text-[#408A71]'
                     : 'text-primary/35 hover:text-[#408A71]/60'
