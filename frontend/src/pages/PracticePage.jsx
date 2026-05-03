@@ -437,7 +437,7 @@ export default function PracticePage() {
 
           {/* Task list panel */}
           <aside className={`
-            bg-[#F4F4F4] border-r border-primary/8 overflow-y-auto flex-shrink-0
+            bg-white border-r border-primary/8 overflow-y-auto flex-shrink-0
             lg:w-72 lg:block
             ${mobileView === 'tasks' ? 'block w-full' : 'hidden'}
           `}>
