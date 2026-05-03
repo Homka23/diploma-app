@@ -120,6 +120,102 @@ function StaffView({ vexNotes, clef = 'treble', label, timeSignature }) {
   );
 }
 
+// ── Metronome ─────────────────────────────────────────────────────────────────
+function Metronome({ bpm = 60, forceStop = false }) {
+  const [running, setRunning]   = useState(false);
+  const [beat, setBeat]         = useState(false);
+  const [localBpm, setLocalBpm] = useState(bpm);
+  const intervalRef  = useRef(null);
+  const audioCtxRef  = useRef(null);
+
+  useEffect(() => { setLocalBpm(bpm); }, [bpm]);
+
+  // stop when parent requests it (e.g. recording starts)
+  useEffect(() => {
+    if (forceStop && running) stop();
+  }, [forceStop]);
+
+  // stop on unmount
+  useEffect(() => () => { clearInterval(intervalRef.current); }, []);
+
+  function click() {
+    if (!audioCtxRef.current) audioCtxRef.current = new AudioContext();
+    const ctx  = audioCtxRef.current;
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.4, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.04);
+    setBeat(true);
+    setTimeout(() => setBeat(false), 80);
+  }
+
+  function start() {
+    click();
+    intervalRef.current = setInterval(click, (60 / localBpm) * 1000);
+    setRunning(true);
+    onStart?.();
+  }
+
+  function stop() {
+    clearInterval(intervalRef.current);
+    setRunning(false);
+    setBeat(false);
+    onStop?.();
+  }
+
+  function toggle() { running ? stop() : start(); }
+
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-primary/12 bg-primary/4 px-4 py-2.5">
+      {/* beat dot */}
+      <span className={`h-3 w-3 rounded-full flex-shrink-0 transition-all duration-75 ${
+        running ? (beat ? 'bg-primary scale-125' : 'bg-primary/25') : 'bg-primary/15'
+      }`} />
+
+      {/* BPM input */}
+      <div className="flex items-center gap-1.5">
+        <button onClick={() => setLocalBpm(v => Math.max(40, v - 5))} disabled={running}
+          className="text-primary/50 hover:text-primary disabled:opacity-30 text-base leading-none font-bold w-5 text-center">−</button>
+        <input
+          type="number" min={40} max={240} value={localBpm} disabled={running}
+          onChange={e => setLocalBpm(Math.max(40, Math.min(240, parseInt(e.target.value) || 60)))}
+          className="w-12 text-center text-sm font-bold text-primary bg-transparent border-none outline-none disabled:opacity-60"
+        />
+        <button onClick={() => setLocalBpm(v => Math.min(240, v + 5))} disabled={running}
+          className="text-primary/50 hover:text-primary disabled:opacity-30 text-base leading-none font-bold w-5 text-center">+</button>
+        <span className="text-xs text-primary/40 font-medium">BPM</span>
+      </div>
+
+      {/* start/stop */}
+      <button onClick={toggle}
+        className={`ml-auto flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+          running
+            ? 'bg-primary/15 text-primary hover:bg-primary/25'
+            : 'bg-primary text-white hover:bg-primary-hover'
+        }`}>
+        {running ? (
+          <>
+            <span className="h-2 w-2 rounded-sm bg-primary" />
+            Stop
+          </>
+        ) : (
+          <>
+            <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+            </svg>
+            Metronome
+          </>
+        )}
+      </button>
+    </div>
+  );
+}
+
 // ── Attempt history ───────────────────────────────────────────────────────────
 function AttemptHistory({ taskId, refreshTrigger }) {
   const [attempts, setAttempts] = useState([]);
@@ -410,7 +506,10 @@ export function PracticeTaskTab({ task, onCoinsChange }) {
     setRecording(false);
   }, [task.id]);
 
+  const [stopMetronome, setStopMetronome] = useState(false);
+
   async function startRecording() {
+    setStopMetronome(true);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mr = new MediaRecorder(stream);
@@ -430,6 +529,8 @@ export function PracticeTaskTab({ task, onCoinsChange }) {
       setResult(null);
     } catch {
       setError('Microphone access denied');
+    } finally {
+      setStopMetronome(false);
     }
   }
 
@@ -472,6 +573,7 @@ export function PracticeTaskTab({ task, onCoinsChange }) {
 
   const expected      = task.expected_json?.notes         ?? [];
   const timeSignature = task.expected_json?.timeSignature ?? null;
+  const bpm           = task.expected_json?.bpm           ?? 60;
 
   const expectedVex = expected
     .map(n => ({ keys: [nameToVexKey(n)].filter(Boolean), duration: 'q', accs: [n.includes('#') ? '#' : n.includes('b') ? 'b' : null] }))
@@ -538,6 +640,11 @@ export function PracticeTaskTab({ task, onCoinsChange }) {
             <StaffView vexNotes={expectedVex} label="Notes to play" timeSignature={timeSignature} />
           </div>
         )}
+
+        {/* Metronome */}
+        <div className="mt-4">
+          <Metronome bpm={bpm} forceStop={stopMetronome} />
+        </div>
 
         {/* Record controls */}
         <div className="mt-5 flex items-center gap-3">

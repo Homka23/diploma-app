@@ -829,10 +829,11 @@ const PRACTICE_DURATIONS = [
 ];
 
 function PracticeTaskEditor({ task, onSave, onDelete }) {
-  const init = task.expected_json ?? { notes: [], durations: [], timeSignature: '4/4' };
+  const init = task.expected_json ?? { notes: [], durations: [], timeSignature: '4/4', bpm: 60 };
   const [title, setTitle]           = useState(task.title ?? '');
   const [instruction, setInstruction] = useState(task.instruction_text ?? '');
   const [timeSig, setTimeSig]       = useState(init.timeSignature ?? '4/4');
+  const [bpm, setBpm]               = useState(init.bpm ?? 60);
   const initRows = (init.notes ?? []).map((n, i) => ({ note: n, duration: init.durations?.[i] ?? 1 }));
   const [rows, setRows]             = useState(initRows.length ? initRows : [{ note: 'C4', duration: 1 }]);
   const [open, setOpen]             = useState(false);
@@ -849,7 +850,7 @@ function PracticeTaskEditor({ task, onSave, onDelete }) {
       await onSave({
         title,
         instruction_text: instruction,
-        expected_json: { notes: rows.map(r => r.note), durations: rows.map(r => Number(r.duration)), timeSignature: timeSig },
+        expected_json: { notes: rows.map(r => r.note), durations: rows.map(r => Number(r.duration)), timeSignature: timeSig, bpm: Number(bpm) },
       });
     } catch (e) { setErr(e.message); throw e; }
   }
@@ -876,11 +877,17 @@ function PracticeTaskEditor({ task, onSave, onDelete }) {
           <Field label="Instruction">
             <input className={inp} value={instruction} onChange={e => setInstruction(e.target.value)} placeholder="e.g. Play these notes in order" />
           </Field>
-          <Field label="Time signature">
-            <select className={inp} value={timeSig} onChange={e => setTimeSig(e.target.value)}>
-              {TIME_SIGS.map(t => <option key={t}>{t}</option>)}
-            </select>
-          </Field>
+          <div className="flex gap-3">
+            <Field label="Time signature">
+              <select className={inp} value={timeSig} onChange={e => setTimeSig(e.target.value)}>
+                {TIME_SIGS.map(t => <option key={t}>{t}</option>)}
+              </select>
+            </Field>
+            <Field label="BPM">
+              <input className={inp} type="number" min={40} max={240} value={bpm}
+                onChange={e => setBpm(Math.max(40, Math.min(240, parseInt(e.target.value) || 60)))} />
+            </Field>
+          </div>
           <NoteSection
             title="Notes & durations"
             notes={rows}
