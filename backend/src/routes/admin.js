@@ -8,6 +8,7 @@ import {
   createOption, updateOption, deleteOption,
   getEarOptions, createEarOption, updateEarOption, deleteEarOption,
   getUsers, updateUserRole, toggleUserBlock,
+  getPracticeTasks, createPracticeTask, updatePracticeTask, deletePracticeTask,
 } from '../controllers/admin.js';
 
 const router = Router();
@@ -56,5 +57,11 @@ router.delete('/ear-options/:id',                   deleteEarOption);
 router.get   ('/users',           getUsers);
 router.put   ('/users/:id/role',  updateUserRole);
 router.put   ('/users/:id/block', toggleUserBlock);
+
+// Practice tasks
+router.get   ('/lessons/:lessonId/practice-tasks', getPracticeTasks);
+router.post  ('/lessons/:lessonId/practice-tasks', createPracticeTask);
+router.put   ('/practice-tasks/:id',               updatePracticeTask);
+router.delete('/practice-tasks/:id',               deletePracticeTask);
 
 export default router;

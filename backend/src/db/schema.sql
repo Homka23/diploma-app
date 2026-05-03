@@ -55,6 +55,7 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash   VARCHAR(255),
     google_id       VARCHAR(255) UNIQUE,
     display_name    VARCHAR(100),
+    coins           BIGINT       NOT NULL DEFAULT 0 CHECK (coins >= 0),
     created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
 

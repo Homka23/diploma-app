@@ -523,6 +523,51 @@ export async function toggleUserBlock(req, res) {
   res.json(rows[0]);
 }
 
+// ── PRACTICE TASKS ─────────────────────────────────────────────────────────────
+
+export async function getPracticeTasks(req, res) {
+  const lessonId = parseInt(req.params.lessonId, 10);
+  const { rows } = await pool.query(
+    'SELECT id, title, instruction_text, expected_json, position FROM practice_tasks WHERE lesson_id = $1 ORDER BY position, id',
+    [lessonId],
+  );
+  res.json(rows);
+}
+
+export async function createPracticeTask(req, res) {
+  const lessonId = parseInt(req.params.lessonId, 10);
+  const { title = '', instruction_text = '', expected_json = { notes: [] } } = req.body;
+  const pos = await nextPosition('practice_tasks', 'lesson_id', lessonId);
+  const { rows: [task] } = await pool.query(
+    `INSERT INTO practice_tasks (lesson_id, title, instruction_text, expected_json, position)
+     VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+    [lessonId, title, instruction_text, JSON.stringify(expected_json), pos],
+  );
+  res.status(201).json(task);
+}
+
+export async function updatePracticeTask(req, res) {
+  const id = parseInt(req.params.id, 10);
+  const { title, instruction_text, expected_json } = req.body;
+  const { rows } = await pool.query(
+    `UPDATE practice_tasks SET
+       title            = COALESCE($1, title),
+       instruction_text = COALESCE($2, instruction_text),
+       expected_json    = COALESCE($3, expected_json),
+       updated_at       = NOW()
+     WHERE id = $4 RETURNING *`,
+    [title ?? null, instruction_text ?? null, expected_json ? JSON.stringify(expected_json) : null, id],
+  );
+  if (!rows.length) return res.status(404).json({ error: 'Not found' });
+  res.json(rows[0]);
+}
+
+export async function deletePracticeTask(req, res) {
+  const id = parseInt(req.params.id, 10);
+  await pool.query('DELETE FROM practice_tasks WHERE id = $1', [id]);
+  res.json({ ok: true });
+}
+
 // ── REORDER TOPICS / LESSONS ───────────────────────────────────────────────────
 
 export async function reorderTopics(req, res) {

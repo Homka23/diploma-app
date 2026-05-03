@@ -820,6 +820,161 @@ const TAB_BLOCK_TYPES = {
   transcription:['transcription'],
 };
 
+// ── PRACTICE TASKS PANEL ─────────────────────────────────────────────────────
+const PRACTICE_DURATIONS = [
+  { value: 0.25, label: '16th' }, { value: 0.5, label: '8th' },
+  { value: 1, label: 'Quarter' }, { value: 1.5, label: 'Dotted quarter' },
+  { value: 2, label: 'Half' },    { value: 3, label: 'Dotted half' },
+  { value: 4, label: 'Whole' },
+];
+
+function PracticeTaskEditor({ task, onSave, onDelete }) {
+  const init = task.expected_json ?? { notes: [], durations: [], timeSignature: '4/4' };
+  const [title, setTitle]           = useState(task.title ?? '');
+  const [instruction, setInstruction] = useState(task.instruction_text ?? '');
+  const [timeSig, setTimeSig]       = useState(init.timeSignature ?? '4/4');
+  const initRows = (init.notes ?? []).map((n, i) => ({ note: n, duration: init.durations?.[i] ?? 1 }));
+  const [rows, setRows]             = useState(initRows.length ? initRows : [{ note: 'C4', duration: 1 }]);
+  const [open, setOpen]             = useState(false);
+  const [err, setErr]               = useState('');
+
+  function updateRow(i, patch) { setRows(r => r.map((x, j) => j === i ? { ...x, ...patch } : x)); }
+  function addRow()    { setRows(r => [...r, { note: 'C4', duration: 1 }]); }
+  function removeRow(i){ setRows(r => r.filter((_, j) => j !== i)); }
+  function moveRow(i, dir) { setRows(r => swapArr(r, i, i + dir)); }
+
+  async function save() {
+    setErr('');
+    try {
+      await onSave({
+        title,
+        instruction_text: instruction,
+        expected_json: { notes: rows.map(r => r.note), durations: rows.map(r => Number(r.duration)), timeSignature: timeSig },
+      });
+    } catch (e) { setErr(e.message); throw e; }
+  }
+
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+      <div className="flex items-center gap-2 px-4 py-3">
+        <button onClick={() => setOpen(v => !v)} className="flex-1 flex items-center gap-2 text-left min-w-0">
+          <svg className={`h-4 w-4 text-gray-400 flex-shrink-0 transition-transform ${open ? 'rotate-90' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+          </svg>
+          <span className="text-sm font-medium text-gray-800 truncate">{title || 'Untitled task'}</span>
+          {rows.length > 0 && (
+            <span className="text-xs text-gray-400 flex-shrink-0">{rows.length} note{rows.length !== 1 ? 's' : ''}</span>
+          )}
+        </button>
+        <Btn variant="danger" size="sm" onClick={onDelete}><Trash /></Btn>
+      </div>
+      {open && (
+        <div className="border-t border-gray-100 px-4 py-4 space-y-3">
+          <Field label="Title">
+            <input className={inp} value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. C major scale" />
+          </Field>
+          <Field label="Instruction">
+            <input className={inp} value={instruction} onChange={e => setInstruction(e.target.value)} placeholder="e.g. Play these notes in order" />
+          </Field>
+          <Field label="Time signature">
+            <select className={inp} value={timeSig} onChange={e => setTimeSig(e.target.value)}>
+              {TIME_SIGS.map(t => <option key={t}>{t}</option>)}
+            </select>
+          </Field>
+          <NoteSection
+            title="Notes & durations"
+            notes={rows}
+            toJson={rs => rs.map(r => ({ note: r.note, duration: Number(r.duration) }))}
+            fromJson={arr => arr.map(r => ({ note: r.note ?? 'C4', duration: r.duration ?? 1 }))}
+            onNotesChange={setRows}
+            addBtn={<Btn variant="ghost" className="mt-2" onClick={addRow}><Plus />Add note</Btn>}
+          >
+            <div className="space-y-2">
+              {rows.map((r, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <div className="flex flex-col">
+                    <button disabled={i === 0} onClick={() => moveRow(i, -1)} className="text-gray-300 hover:text-gray-600 disabled:opacity-20 leading-none text-xs">▲</button>
+                    <button disabled={i === rows.length - 1} onClick={() => moveRow(i, 1)} className="text-gray-300 hover:text-gray-600 disabled:opacity-20 leading-none text-xs">▼</button>
+                  </div>
+                  <NoteSelector value={r.note} onChange={v => updateRow(i, { note: v })} />
+                  <select className={sel} value={r.duration} onChange={e => updateRow(i, { duration: e.target.value })}>
+                    {PRACTICE_DURATIONS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+                  </select>
+                  <button onClick={() => removeRow(i)} className="text-gray-300 hover:text-red-400 text-sm">✕</button>
+                </div>
+              ))}
+            </div>
+          </NoteSection>
+          <div className="flex items-center gap-2">
+            <SaveBtn onSave={save} />
+            <ErrMsg error={err} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PracticeTasksPanel({ lessonId }) {
+  const [tasks, setTasks] = useState(null);
+  const [err, setErr]     = useState('');
+  const [dlg, setDlg]     = useState(null);
+
+  const load = useCallback(async () => {
+    try { setTasks(await api('GET', `/lessons/${lessonId}/practice-tasks`)); }
+    catch (e) { setErr(e.message); }
+  }, [lessonId]);
+  useEffect(() => { load(); }, [load]);
+
+  async function addTask() {
+    try {
+      await api('POST', `/lessons/${lessonId}/practice-tasks`, { title: '', instruction_text: '', expected_json: { notes: [], durations: [], timeSignature: '4/4' } });
+      load();
+    } catch (e) { setErr(e.message); }
+  }
+
+  async function saveTask(id, data) {
+    await api('PUT', `/practice-tasks/${id}`, data);
+    load();
+  }
+
+  async function deleteTask(id) {
+    try { await api('DELETE', `/practice-tasks/${id}`); setDlg(null); load(); }
+    catch (e) { setErr(e.message); }
+  }
+
+  return (
+    <div>
+      <ErrMsg error={err} />
+      {!tasks && <p className="text-sm text-gray-400 animate-pulse">Loading…</p>}
+      {tasks && (
+        <>
+          <div className="space-y-2 mb-4">
+            {tasks.map(task => (
+              <PracticeTaskEditor
+                key={task.id}
+                task={task}
+                onSave={data => saveTask(task.id, data)}
+                onDelete={() => setDlg(task.id)}
+              />
+            ))}
+            {tasks.length === 0 && <p className="text-sm text-gray-400">No practice tasks yet.</p>}
+          </div>
+          <Btn onClick={addTask}><Plus />Add task</Btn>
+        </>
+      )}
+      {dlg && (
+        <ConfirmModal
+          title="Delete task?"
+          message="All attempts for this task will also be deleted."
+          onConfirm={() => deleteTask(dlg)}
+          onCancel={() => setDlg(null)}
+        />
+      )}
+    </div>
+  );
+}
+
 function LessonEditor({ lesson, onBack }) {
   const [tab, setTab]         = useState('theory');
   const [blocks, setBlocks]   = useState(null);
@@ -871,7 +1026,7 @@ function LessonEditor({ lesson, onBack }) {
 
       {/* Tab selector */}
       <div className="flex gap-1 mb-5 bg-gray-100 rounded-xl p-1 w-full sm:w-fit">
-        {['theory', 'test', 'transcription'].map(t => (
+        {['theory', 'test', 'transcription', 'practice'].map(t => (
           <button key={t} onClick={() => setTab(t)}
             className={`flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-sm font-medium transition-colors capitalize ${
               tab === t ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
@@ -883,43 +1038,50 @@ function LessonEditor({ lesson, onBack }) {
 
       <ErrMsg error={err} />
 
-      {/* Blocks list */}
-      {!blocks && <p className="text-sm text-gray-400 animate-pulse">Loading…</p>}
-      <div className="space-y-2 mb-4">
-        {tabBlocks.map((b, i) => (
-          <div key={b.id}
-            draggable
-            onDragStart={() => setDragIdx(i)}
-            onDragOver={e => { e.preventDefault(); setOverIdx(i); }}
-            onDragLeave={() => setOverIdx(null)}
-            onDrop={() => handleDrop(i)}
-            onDragEnd={() => { setDragIdx(null); setOverIdx(null); }}
-            className={`flex items-start gap-2 rounded-xl transition-all
-              ${dragIdx === i ? 'opacity-40' : ''}
-              ${overIdx === i && dragIdx !== i ? 'ring-2 ring-[#408A71] ring-offset-1' : ''}`}>
-            <div className="pt-3 px-1 text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing">
-              <GripHandle />
-            </div>
-            <div className="flex-1 min-w-0 pr-2">
-              <BlockCard block={b}
-                onDelete={() => deleteBlock(b.id)}
-                onSaved={load} />
-            </div>
-          </div>
-        ))}
-        {blocks && tabBlocks.length === 0 && (
-          <p className="text-sm text-gray-400">No blocks yet.</p>
-        )}
-      </div>
+      {/* Practice tasks tab */}
+      {tab === 'practice' && <PracticeTasksPanel lessonId={lesson.id} />}
 
-      {/* Add block buttons */}
-      <div className="flex flex-wrap gap-2">
-        {TAB_BLOCK_TYPES[tab].map(bt => (
-          <Btn key={bt} variant="ghost" onClick={() => addBlock(bt)}>
-            <Plus />{bt.replace('_', ' ')}
-          </Btn>
-        ))}
-      </div>
+      {/* Blocks list (all non-practice tabs) */}
+      {tab !== 'practice' && (
+        <>
+          {!blocks && <p className="text-sm text-gray-400 animate-pulse">Loading…</p>}
+          <div className="space-y-2 mb-4">
+            {tabBlocks.map((b, i) => (
+              <div key={b.id}
+                draggable
+                onDragStart={() => setDragIdx(i)}
+                onDragOver={e => { e.preventDefault(); setOverIdx(i); }}
+                onDragLeave={() => setOverIdx(null)}
+                onDrop={() => handleDrop(i)}
+                onDragEnd={() => { setDragIdx(null); setOverIdx(null); }}
+                className={`flex items-start gap-2 rounded-xl transition-all
+                  ${dragIdx === i ? 'opacity-40' : ''}
+                  ${overIdx === i && dragIdx !== i ? 'ring-2 ring-[#408A71] ring-offset-1' : ''}`}>
+                <div className="pt-3 px-1 text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing">
+                  <GripHandle />
+                </div>
+                <div className="flex-1 min-w-0 pr-2">
+                  <BlockCard block={b}
+                    onDelete={() => deleteBlock(b.id)}
+                    onSaved={load} />
+                </div>
+              </div>
+            ))}
+            {blocks && tabBlocks.length === 0 && (
+              <p className="text-sm text-gray-400">No blocks yet.</p>
+            )}
+          </div>
+
+          {/* Add block buttons */}
+          <div className="flex flex-wrap gap-2">
+            {TAB_BLOCK_TYPES[tab]?.map(bt => (
+              <Btn key={bt} variant="ghost" onClick={() => addBlock(bt)}>
+                <Plus />{bt.replace('_', ' ')}
+              </Btn>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
