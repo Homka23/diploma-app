@@ -106,8 +106,9 @@ export default function MetronomePage() {
     if (!running) startMetronome();
   }
 
-  const beatSec     = 60 / bpm;
-  const ballTravel  = 180;
+  const beatSec    = 60 / bpm;
+  // Scale travel height with tempo: slower = higher bounce, faster = shorter bounce
+  const ballTravel = Math.max(40, Math.min(180, Math.round(10800 / bpm)));
 
   return (
     <div className="min-h-screen bg-[#F4F4F4] flex flex-col">
