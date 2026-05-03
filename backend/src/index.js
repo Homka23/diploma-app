@@ -5,7 +5,8 @@ import pool from './db/index.js';
 import authRouter   from './routes/auth.js';
 import topicsRouter  from './routes/topics.js';
 import lessonsRouter from './routes/lessons.js';
-import adminRouter   from './routes/admin.js';
+import adminRouter    from './routes/admin.js';
+import practiceRouter from './routes/practice.js';
 
 const PORT = process.env.PORT ?? 3000;
 const app = express();
@@ -30,7 +31,8 @@ app.use(express.json());
 app.use('/api/auth',   authRouter);
 app.use('/api/topics',  topicsRouter);
 app.use('/api/lessons', lessonsRouter);
-app.use('/api/admin',   adminRouter);
+app.use('/api/admin',    adminRouter);
+app.use('/api/practice', practiceRouter);
 
 async function start() {
   const client = await pool.connect();
