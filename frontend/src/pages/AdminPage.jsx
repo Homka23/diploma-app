@@ -1268,37 +1268,37 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* top bar */}
-      <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-4">
-        <span className="text-sm font-bold text-[#408A71]">Admin</span>
-        <span className="text-gray-300">|</span>
+      <header className="bg-white border-b border-gray-200 px-3 sm:px-6 py-3 flex items-center gap-2 sm:gap-4 overflow-x-auto">
+        <span className="text-sm font-bold text-[#408A71] flex-shrink-0">Admin</span>
+        <span className="text-gray-300 flex-shrink-0">|</span>
         <button onClick={() => { setView('topics'); setTopic(null); setLesson(null); }}
-          className={`text-sm transition-colors ${view !== 'users' ? 'text-gray-800 font-medium' : 'text-gray-400 hover:text-gray-700'}`}>
+          className={`text-sm flex-shrink-0 transition-colors ${view !== 'users' ? 'text-gray-800 font-medium' : 'text-gray-400 hover:text-gray-700'}`}>
           Topics
         </button>
         {selectedTopic && view !== 'users' && (
           <>
-            <span className="text-gray-300">/</span>
+            <span className="text-gray-300 flex-shrink-0">/</span>
             <button onClick={() => { setView('lessons'); setLesson(null); }}
-              className="text-sm text-gray-500 hover:text-gray-800">{selectedTopic.title}</button>
+              className="text-sm text-gray-500 hover:text-gray-800 truncate max-w-[100px] sm:max-w-none">{selectedTopic.title}</button>
           </>
         )}
         {selectedLesson && view !== 'users' && (
           <>
-            <span className="text-gray-300">/</span>
-            <span className="text-sm text-gray-800">{selectedLesson.title}</span>
+            <span className="text-gray-300 flex-shrink-0">/</span>
+            <span className="text-sm text-gray-800 truncate max-w-[80px] sm:max-w-none">{selectedLesson.title}</span>
           </>
         )}
-        <span className="text-gray-300">|</span>
+        <span className="text-gray-300 flex-shrink-0">|</span>
         <button onClick={() => { setView('users'); setTopic(null); setLesson(null); }}
-          className={`text-sm transition-colors ${view === 'users' ? 'text-gray-800 font-medium' : 'text-gray-400 hover:text-gray-700'}`}>
+          className={`text-sm flex-shrink-0 transition-colors ${view === 'users' ? 'text-gray-800 font-medium' : 'text-gray-400 hover:text-gray-700'}`}>
           Users
         </button>
         <span className="flex-1" />
         <button onClick={() => navigate('/home')}
-          className="text-xs text-gray-400 hover:text-gray-700">← Back to app</button>
+          className="text-xs text-gray-400 hover:text-gray-700 flex-shrink-0">← Back</button>
       </header>
 
-      <main className="max-w-4xl mx-auto px-6 py-8">
+      <main className="max-w-4xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
         {view === 'topics' && (
           <TopicsPanel onSelect={t => { setTopic(t); setView('lessons'); }} />
         )}
