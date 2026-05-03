@@ -31,7 +31,8 @@ function evaluateDurations(notes, expected, expectedRatios, timeSignature) {
   return { noteDurations, durationScore, beatUnit: parseFloat(beatUnit.toFixed(3)) };
 }
 
-const COINS_PER_PASS = 10;
+const COINS_FIRST_PASS  = 10;
+const COINS_REPEAT_PASS = 2;
 
 // ── GET /api/practice/transcription ──────────────────────────────────────────
 
@@ -138,13 +139,11 @@ export async function submitTaskAttempt(req, res) {
         'SELECT id FROM practice_task_attempts WHERE user_id = $1 AND task_id = $2 AND passed = true LIMIT 1',
         [userId, taskId],
       );
-      if (prevPassed.length === 0) {
-        coinsEarned = COINS_PER_PASS;
-        await pool.query(
-          'UPDATE users SET coins = coins + $1 WHERE id = $2',
-          [coinsEarned, userId],
-        );
-      }
+      coinsEarned = prevPassed.length === 0 ? COINS_FIRST_PASS : COINS_REPEAT_PASS;
+      await pool.query(
+        'UPDATE users SET coins = coins + $1 WHERE id = $2',
+        [coinsEarned, userId],
+      );
     }
 
     // Save attempt (keep last 10 per user per task)
