@@ -110,6 +110,22 @@ export async function submitTaskAttempt(req, res) {
     const scorePercent = Math.round(durationScore != null ? pitchScore * 0.75 + durationScore * 0.25 : pitchScore);
     const passed       = scorePercent >= 80;
 
+    // Check for first pass BEFORE saving the new attempt
+    let coinsEarned = 0;
+    if (passed) {
+      const { rows: prevPassed } = await pool.query(
+        'SELECT id FROM practice_task_attempts WHERE user_id = $1 AND task_id = $2 AND passed = true LIMIT 1',
+        [userId, taskId],
+      );
+      if (prevPassed.length === 0) {
+        coinsEarned = COINS_PER_PASS;
+        await pool.query(
+          'UPDATE users SET coins = coins + $1 WHERE id = $2',
+          [coinsEarned, userId],
+        );
+      }
+    }
+
     // Save attempt (keep last 10 per user per task)
     await pool.query(
       `INSERT INTO practice_task_attempts (user_id, task_id, score_percent, passed, recognized_json)
@@ -122,16 +138,6 @@ export async function submitTaskAttempt(req, res) {
          AND id NOT IN (SELECT id FROM practice_task_attempts WHERE user_id = $1 AND task_id = $2 ORDER BY created_at DESC LIMIT 10)`,
       [userId, taskId],
     );
-
-    // Award coins if passed (no cap — motivate repeat practice)
-    let coinsEarned = 0;
-    if (passed) {
-      coinsEarned = COINS_PER_PASS;
-      await pool.query(
-        'UPDATE users SET coins = coins + $1 WHERE id = $2',
-        [coinsEarned, userId],
-      );
-    }
 
     res.json({ scorePercent, passed, recognized, expected, notes, noteDurations, durationScore,
       timeSignature: timeSignature ?? null, beatUnit: beatUnit ?? null, coinsEarned });
