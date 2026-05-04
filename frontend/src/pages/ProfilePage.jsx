@@ -222,6 +222,43 @@ export default function ProfilePage() {
             ) : (
               <div className="h-1.5 rounded-full" style={{ backgroundColor: '#408A71', opacity: 0.3 }} />
             )}
+
+            {/* All levels list */}
+            <div className="pt-1 space-y-1">
+              {LEVELS.map((l, i) => {
+                const done    = xp >= l.minXp;
+                const current = l.level === curLevel.level;
+                const next    = nextLevel?.level === l.level;
+                return (
+                  <div key={l.level} className={`flex items-center gap-3 rounded-xl px-3 py-2 transition-colors ${
+                    current ? 'bg-[#408A71]/8' : 'bg-transparent'
+                  }`}>
+                    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-black"
+                      style={{
+                        backgroundColor: done ? '#408A71' : '#285A480D',
+                        color: done ? '#fff' : '#285A4840',
+                      }}>
+                      {done && !current ? '✓' : l.level}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className={`text-sm font-semibold ${current ? 'text-primary' : done ? 'text-primary/50' : 'text-primary/25'}`}>
+                        {l.name}
+                      </span>
+                    </div>
+                    <span className={`text-xs tabular-nums ${current ? 'font-bold' : ''}`}
+                      style={{ color: done ? '#408A71' : '#285A4830' }}>
+                      {l.minXp === 0 ? 'Старт' : `${l.minXp} XP`}
+                    </span>
+                    {current && (
+                      <span className="rounded-full bg-[#408A71] px-2 py-0.5 text-[10px] font-bold text-white">зараз</span>
+                    )}
+                    {next && !current && (
+                      <span className="rounded-full border border-primary/15 px-2 py-0.5 text-[10px] text-primary/35">далі</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
 
