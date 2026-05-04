@@ -8,11 +8,11 @@ function initials(user) {
 }
 
 const LEVELS = [
-  { level: 1, name: 'Beginner',  minXp: 0    },
-  { level: 2, name: 'Student',   minXp: 200  },
-  { level: 3, name: 'Musician',  minXp: 500  },
-  { level: 4, name: 'Performer', minXp: 1000 },
-  { level: 5, name: 'Virtuoso',  minXp: 2000 },
+  { level: 1, name: 'Beginner',  minXp: 0,    ring: 'ring-slate-300',   dot: 'bg-slate-400'   },
+  { level: 2, name: 'Student',   minXp: 200,  ring: 'ring-sky-400',     dot: 'bg-sky-400'     },
+  { level: 3, name: 'Musician',  minXp: 500,  ring: 'ring-[#408A71]',   dot: 'bg-[#408A71]'  },
+  { level: 4, name: 'Performer', minXp: 1000, ring: 'ring-amber-400',   dot: 'bg-amber-400'   },
+  { level: 5, name: 'Virtuoso',  minXp: 2000, ring: 'ring-violet-500',  dot: 'bg-violet-500'  },
 ];
 
 function getLevel(xp = 0)     { return LEVELS.reduce((cur, l) => xp >= l.minXp ? l : cur, LEVELS[0]); }
@@ -131,134 +131,146 @@ export default function ProfilePage() {
       <main className="mx-auto max-w-2xl animate-fade-slide-up px-6 py-8 space-y-4">
 
         {/* Avatar + name */}
-        <div className="flex items-center gap-5 rounded-2xl border border-primary/12 bg-white px-6 py-5">
-          <div className="relative flex-shrink-0">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-xl font-black text-white">
-              {initials(user)}
+        <div className="rounded-2xl border border-primary/12 bg-white px-6 py-6">
+          <div className="flex flex-col items-center gap-3 pb-5 border-b border-primary/6">
+            {/* Avatar with level ring */}
+            <div className="relative">
+              <div className={`flex h-20 w-20 items-center justify-center rounded-full bg-primary text-2xl font-black text-white ring-4 ring-offset-2 ring-offset-white ${curLevel.ring}`}>
+                {initials(user)}
+              </div>
+              {/* Level name badge */}
+              <span className={`absolute -bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-0.5 text-[11px] font-bold text-white shadow-sm ${curLevel.dot}`}>
+                {curLevel.name}
+              </span>
             </div>
-            <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#408A71] text-[11px] font-black text-white ring-2 ring-white">
-              {curLevel.level}
+            {/* Name */}
+            <div className="mt-4 text-center">
+              {editing ? (
+                <div className="flex items-center gap-2">
+                  <input autoFocus value={nameVal}
+                    onChange={e => setNameVal(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') saveName(); if (e.key === 'Escape') setEditing(false); }}
+                    className="rounded-lg border border-primary/25 px-3 py-1.5 text-sm text-dark focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15"
+                  />
+                  <button onClick={saveName} disabled={saving}
+                    className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-hover disabled:opacity-60">
+                    {saving ? '…' : 'Save'}
+                  </button>
+                  <button onClick={() => { setEditing(false); setSaveErr(''); }}
+                    className="rounded-lg px-3 py-1.5 text-xs font-medium text-primary/50 hover:bg-primary/8">
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-1.5">
+                  <p className="font-bold text-primary">{user.display_name || user.username || user.email}</p>
+                  <button onClick={() => setEditing(true)} className="text-primary/25 hover:text-primary">
+                    <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+              {saveErr && <p className="mt-1 text-xs text-red-500">{saveErr}</p>}
+              <p className="mt-0.5 text-xs text-primary/40">{user.email}</p>
+              {user.username && <p className="text-xs text-primary/30">@{user.username}</p>}
+              <p className="mt-1 text-[10px] text-primary/25">Joined {joinedDate}</p>
             </div>
           </div>
-          <div className="min-w-0 flex-1">
-            {editing ? (
-              <div className="flex items-center gap-2">
-                <input autoFocus value={nameVal}
-                  onChange={e => setNameVal(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') saveName(); if (e.key === 'Escape') setEditing(false); }}
-                  className="flex-1 rounded-lg border border-primary/25 px-3 py-1.5 text-sm text-dark focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15"
-                />
-                <button onClick={saveName} disabled={saving}
-                  className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-hover disabled:opacity-60">
-                  {saving ? '…' : 'Save'}
-                </button>
-                <button onClick={() => { setEditing(false); setSaveErr(''); }}
-                  className="rounded-lg px-3 py-1.5 text-xs font-medium text-primary/50 hover:bg-primary/8">
-                  Cancel
-                </button>
+
+          {/* XP progress */}
+          <div className="pt-5 space-y-4">
+            <div className="flex items-end justify-between">
+              <div>
+                <p className="text-xs text-primary/40">Experience</p>
+                <p className="text-2xl font-black text-primary tabular-nums">{xp} <span className="text-sm font-semibold text-primary/40">XP</span></p>
               </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <p className="truncate font-bold text-primary">{user.display_name || user.username || user.email}</p>
-                <button onClick={() => setEditing(true)} className="flex-shrink-0 text-primary/30 hover:text-primary">
-                  <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                  </svg>
-                </button>
+              {nextLevel ? (
+                <p className="text-xs text-primary/35 pb-1">{nextLevel.minXp - xp} XP to <span className="font-semibold text-primary/50">{nextLevel.name}</span></p>
+              ) : (
+                <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-bold text-violet-600 mb-1">Max level</span>
+              )}
+            </div>
+
+            {nextLevel && (
+              <div className="space-y-1">
+                <div className="h-2 overflow-hidden rounded-full bg-primary/10">
+                  <div className="h-full rounded-full bg-primary transition-all duration-700" style={{ width: `${levelPct}%` }} />
+                </div>
+                <div className="flex justify-between text-[10px] text-primary/25">
+                  <span>{curLevel.minXp} XP</span>
+                  <span>{nextLevel.minXp} XP</span>
+                </div>
               </div>
             )}
-            {saveErr && <p className="mt-1 text-xs text-red-500">{saveErr}</p>}
-            <p className="mt-0.5 text-xs text-primary/40">{user.email}</p>
-            {user.username && <p className="text-xs text-primary/30">@{user.username}</p>}
-            <p className="mt-1 text-[10px] text-primary/25">Joined {joinedDate}</p>
+
+            {/* Level track */}
+            <div className="flex items-start">
+              {LEVELS.map((l, i) => {
+                const done    = xp >= l.minXp;
+                const current = l.level === curLevel.level;
+                const nextDone = i < LEVELS.length - 1 && xp >= LEVELS[i + 1].minXp;
+                return (
+                  <div key={l.level} className="flex flex-1 flex-col items-center">
+                    <div className="flex items-center w-full">
+                      {i > 0 && <div className={`flex-1 h-0.5 transition-colors ${done ? 'bg-primary/35' : 'bg-primary/10'}`} />}
+                      <div className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold transition-all duration-300 ${
+                        current ? `${l.dot} text-white shadow-sm scale-110`
+                                : done   ? 'bg-primary/15 text-primary/60'
+                                : 'bg-primary/6 text-primary/20'
+                      }`}>
+                        {done && !current ? '✓' : l.level}
+                      </div>
+                      {i < LEVELS.length - 1 && <div className={`flex-1 h-0.5 transition-colors ${nextDone ? 'bg-primary/35' : 'bg-primary/10'}`} />}
+                    </div>
+                    <p className={`text-[9px] font-semibold mt-1.5 text-center leading-tight ${
+                      current ? 'text-primary' : done ? 'text-primary/35' : 'text-primary/18'
+                    }`}>{l.name}</p>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
 
-        {/* Level & XP */}
-        <div className="rounded-2xl border border-primary/12 bg-white px-5 py-5 space-y-5">
-          <p className="text-xs font-semibold text-primary/40 uppercase tracking-wider">Level & Experience</p>
-
-          {/* Current level + XP */}
-          <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl bg-primary text-2xl font-black text-white shadow-lg shadow-primary/25">
-              {curLevel.level}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-lg font-black text-primary">{curLevel.name}</p>
-              <p className="text-xs text-primary/40">{xp} XP earned</p>
-            </div>
-            {nextLevel ? (
-              <div className="text-right flex-shrink-0">
-                <p className="text-[10px] text-primary/30 uppercase tracking-wide">Next</p>
-                <p className="text-sm font-bold text-primary/60">{nextLevel.name}</p>
-                <p className="text-xs text-primary/35">{nextLevel.minXp - xp} XP left</p>
+        {/* Coin exchange */}
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-amber-100 border border-amber-200">
+                <svg className="h-5 w-5 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" /><path d="M12 6v2m0 8v2M9 9.5h4.5a1.5 1.5 0 010 3H10a1.5 1.5 0 000 3H15" />
+                </svg>
               </div>
-            ) : (
-              <div className="rounded-full bg-[#408A71]/12 px-3 py-1.5">
-                <p className="text-xs font-bold text-[#408A71]">Max level</p>
-              </div>
-            )}
-          </div>
-
-          {/* XP progress bar */}
-          {nextLevel && (
-            <div className="space-y-1.5">
-              <div className="h-2.5 overflow-hidden rounded-full bg-primary/10">
-                <div className="h-full rounded-full bg-primary transition-all duration-700"
-                  style={{ width: `${levelPct}%` }} />
-              </div>
-              <div className="flex justify-between text-[10px] text-primary/30">
-                <span>{curLevel.minXp} XP</span>
-                <span className="font-semibold text-primary/50">{levelPct}%</span>
-                <span>{nextLevel.minXp} XP</span>
-              </div>
-            </div>
-          )}
-
-          {/* Level steps */}
-          <div className="flex items-start pt-1">
-            {LEVELS.map((l, i) => {
-              const done    = xp >= l.minXp;
-              const current = l.level === curLevel.level;
-              const nextDone = i < LEVELS.length - 1 && xp >= LEVELS[i + 1].minXp;
-              return (
-                <div key={l.level} className="flex flex-1 flex-col items-center">
-                  <div className="flex items-center w-full">
-                    {i > 0 && <div className={`flex-1 h-0.5 ${done ? 'bg-primary/40' : 'bg-primary/10'}`} />}
-                    <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold transition-all duration-300 ${
-                      current ? 'bg-primary text-white shadow-md shadow-primary/30 scale-110'
-                              : done   ? 'bg-primary/20 text-primary'
-                              : 'bg-primary/8 text-primary/25'
-                    }`}>
-                      {done && !current ? '✓' : l.level}
-                    </div>
-                    {i < LEVELS.length - 1 && <div className={`flex-1 h-0.5 ${nextDone ? 'bg-primary/40' : 'bg-primary/10'}`} />}
-                  </div>
-                  <p className={`text-[9px] font-semibold mt-1.5 text-center ${
-                    current ? 'text-primary' : done ? 'text-primary/40' : 'text-primary/20'
-                  }`}>
-                    {l.name}
-                  </p>
+              <div>
+                <p className="text-sm font-bold text-amber-700">Boost XP</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-xs font-semibold text-amber-600">10 coins</span>
+                  <svg className="h-3 w-3 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-xs font-semibold text-[#408A71]">+20 XP</span>
                 </div>
-              );
-            })}
-          </div>
-
-          {/* Buy XP */}
-          <div className="flex items-center justify-between pt-3 border-t border-primary/6">
-            <div className="text-xs text-primary/50 leading-relaxed">
-              Spend <span className="font-bold text-amber-500">10 coins</span> → get <span className="font-bold text-primary">+20 XP</span>
-              {coins < 10 && <span className="block text-[10px] text-primary/30">You need {10 - coins} more coins</span>}
+                {coins < 10 && (
+                  <p className="text-[10px] text-amber-500 mt-0.5">Need {10 - coins} more coins</p>
+                )}
+              </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col items-end gap-1.5">
+              <div className="flex items-center gap-1 text-xs text-amber-600">
+                <svg className="h-3.5 w-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" /><path d="M12 6v2m0 8v2M9 9.5h4.5a1.5 1.5 0 010 3H10a1.5 1.5 0 000 3H15" />
+                </svg>
+                <span className="font-bold">{coins}</span>
+              </div>
               {buyMsg && (
                 <span className={`text-xs font-bold ${buyMsg.startsWith('+') ? 'text-[#408A71]' : 'text-red-400'}`}>
                   {buyMsg}
                 </span>
               )}
               <button onClick={handleBuyXp} disabled={buying || coins < 10}
-                className="rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed">
-                {buying ? '…' : 'Buy XP'}
+                className="rounded-lg bg-amber-500 px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed">
+                {buying ? '…' : 'Exchange'}
               </button>
             </div>
           </div>
