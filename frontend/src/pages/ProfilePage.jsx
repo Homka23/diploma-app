@@ -1,5 +1,5 @@
 import { API_BASE } from '../config.js';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 
 function initials(user) {
@@ -209,29 +209,28 @@ export default function ProfilePage() {
             </div>
 
             {/* Level dots track */}
-            <div className="relative flex items-center" style={{ height: 14 }}>
-              {/* background line */}
-              <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-px bg-primary/10" />
-              {/* filled line up to current level */}
-              <div className="absolute top-1/2 -translate-y-1/2 h-px transition-all duration-700"
-                style={{ width: `${(curLevel.level - 1) / (LEVELS.length - 1) * 100}%`, backgroundColor: '#408A71', opacity: 0.45 }} />
-              <div className="relative flex w-full justify-between">
-                {LEVELS.map(l => {
-                  const done    = xp >= l.minXp;
-                  const current = l.level === curLevel.level;
-                  return (
-                    <div key={l.level} title={l.name}
-                      className="flex-shrink-0 rounded-full transition-all duration-300"
+            <div className="flex items-center">
+              {LEVELS.map((l, i) => {
+                const done    = xp >= l.minXp;
+                const current = l.level === curLevel.level;
+                const segFilled = i > 0 && done && xp >= LEVELS[i - 1].minXp;
+                return (
+                  <Fragment key={l.level}>
+                    {i > 0 && (
+                      <div className="flex-1 h-px transition-colors duration-500"
+                        style={{ backgroundColor: segFilled ? '#408A71' : '#285A4815' }} />
+                    )}
+                    <div className="flex-shrink-0 rounded-full transition-all duration-300" title={l.name}
                       style={{
                         width:  current ? 13 : 9,
                         height: current ? 13 : 9,
-                        backgroundColor: done ? '#408A71' : '#285A4820',
-                        boxShadow: current ? '0 0 0 3px #408A7120' : undefined,
+                        backgroundColor: done ? '#408A71' : '#285A4815',
+                        boxShadow: current ? '0 0 0 3px #408A7122' : undefined,
                       }}
                     />
-                  );
-                })}
-              </div>
+                  </Fragment>
+                );
+              })}
             </div>
             <div className="flex justify-between text-[10px] text-primary/25">
               <span>{LEVELS[0].name}</span>
