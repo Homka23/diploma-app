@@ -196,57 +196,46 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* XP progress */}
-          <div className="pt-5 space-y-4">
-            <div className="flex items-end justify-between">
-              <div>
-                <p className="text-xs text-primary/40">Experience</p>
-                <p className="text-2xl font-black tabular-nums" style={{ color: '#408A71' }}>{xp} <span className="text-sm font-semibold text-primary/40">XP</span></p>
-              </div>
-              {nextLevel ? (
-                <p className="text-xs text-primary/35 pb-1">{nextLevel.minXp - xp} XP to <span className="font-semibold text-primary/50">{nextLevel.name}</span></p>
-              ) : (
-                <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-bold text-violet-600 mb-1">Max level</span>
-              )}
+          {/* XP info */}
+          <div className="pt-5 space-y-3">
+            <div className="flex items-baseline justify-between">
+              <span className="text-xl font-black tabular-nums" style={{ color: '#408A71' }}>
+                {xp} <span className="text-sm font-medium text-primary/35">XP</span>
+              </span>
+              {nextLevel
+                ? <span className="text-xs text-primary/40">{nextLevel.minXp - xp} XP до <span className="font-semibold text-primary/55">{nextLevel.name}</span></span>
+                : <span className="text-xs font-semibold" style={{ color: '#408A71' }}>Максимальний рівень</span>
+              }
             </div>
 
-            {nextLevel && (
-              <div className="space-y-1">
-                <div className="h-2 overflow-hidden rounded-full bg-primary/10">
-                  <div className="h-full rounded-full transition-all duration-700" style={{ width: `${levelPct}%`, backgroundColor: '#408A71' }} />
-                </div>
-                <div className="flex justify-between text-[10px] text-primary/25">
-                  <span>{curLevel.minXp} XP</span>
-                  <span>{nextLevel.minXp} XP</span>
-                </div>
+            {/* Level dots track */}
+            <div className="relative flex items-center" style={{ height: 14 }}>
+              {/* background line */}
+              <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-px bg-primary/10" />
+              {/* filled line up to current level */}
+              <div className="absolute top-1/2 -translate-y-1/2 h-px transition-all duration-700"
+                style={{ width: `${(curLevel.level - 1) / (LEVELS.length - 1) * 100}%`, backgroundColor: '#408A71', opacity: 0.45 }} />
+              <div className="relative flex w-full justify-between">
+                {LEVELS.map(l => {
+                  const done    = xp >= l.minXp;
+                  const current = l.level === curLevel.level;
+                  return (
+                    <div key={l.level} title={l.name}
+                      className="flex-shrink-0 rounded-full transition-all duration-300"
+                      style={{
+                        width:  current ? 13 : 9,
+                        height: current ? 13 : 9,
+                        backgroundColor: done ? '#408A71' : '#285A4820',
+                        boxShadow: current ? '0 0 0 3px #408A7120' : undefined,
+                      }}
+                    />
+                  );
+                })}
               </div>
-            )}
-
-            {/* Level track */}
-            <div className="flex items-start">
-              {LEVELS.map((l, i) => {
-                const done    = xp >= l.minXp;
-                const current = l.level === curLevel.level;
-                const nextDone = i < LEVELS.length - 1 && xp >= LEVELS[i + 1].minXp;
-                return (
-                  <div key={l.level} className="flex flex-1 flex-col items-center">
-                    <div className="flex items-center w-full">
-                      {i > 0 && <div className={`flex-1 h-0.5 transition-colors ${done ? 'bg-primary/35' : 'bg-primary/10'}`} />}
-                      <div className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold transition-all duration-300 ${
-                        current ? `${l.dot} text-white shadow-sm scale-110`
-                                : done   ? 'bg-primary/15 text-primary/60'
-                                : 'bg-primary/6 text-primary/20'
-                      }`}>
-                        {done && !current ? '✓' : l.level}
-                      </div>
-                      {i < LEVELS.length - 1 && <div className={`flex-1 h-0.5 transition-colors ${nextDone ? 'bg-primary/35' : 'bg-primary/10'}`} />}
-                    </div>
-                    <p className={`text-[9px] font-semibold mt-1.5 text-center leading-tight ${
-                      current ? 'text-primary' : done ? 'text-primary/35' : 'text-primary/18'
-                    }`}>{l.name}</p>
-                  </div>
-                );
-              })}
+            </div>
+            <div className="flex justify-between text-[10px] text-primary/25">
+              <span>{LEVELS[0].name}</span>
+              <span>{LEVELS[LEVELS.length - 1].name}</span>
             </div>
           </div>
         </div>
