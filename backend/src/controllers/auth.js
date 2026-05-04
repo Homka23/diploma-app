@@ -234,6 +234,19 @@ export async function getMe(req, res) {
     if (!rows.length) return res.status(404).json({ error: 'User not found' });
     res.json({ user: rows[0] });
   } catch (err) {
+    if (err.message.includes('column') && err.message.includes('xp')) {
+      // xp column not yet migrated — return without it
+      try {
+        const { rows } = await pool.query(
+          `SELECT id, username, email, display_name, role, streak_days, last_active_date, created_at,
+                  COALESCE(coins, 0) AS coins, 0 AS xp
+           FROM users WHERE id = $1`,
+          [userId],
+        );
+        if (!rows.length) return res.status(404).json({ error: 'User not found' });
+        return res.json({ user: rows[0] });
+      } catch {}
+    }
     console.error('getMe error:', err.message);
     res.status(500).json({ error: err.message });
   }
