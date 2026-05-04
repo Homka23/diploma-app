@@ -224,37 +224,26 @@ export default function ProfilePage() {
             )}
 
             {/* All levels list */}
-            <div className="pt-1 space-y-1">
-              {LEVELS.map((l, i) => {
+            <div className="pt-1 space-y-0.5">
+              {LEVELS.map(l => {
                 const done    = xp >= l.minXp;
                 const current = l.level === curLevel.level;
-                const next    = nextLevel?.level === l.level;
                 return (
-                  <div key={l.level} className={`flex items-center gap-3 rounded-xl px-3 py-2 transition-colors ${
-                    current ? 'bg-[#408A71]/8' : 'bg-transparent'
-                  }`}>
-                    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-black"
+                  <div key={l.level} className="flex items-center gap-2.5 px-1 py-1">
+                    <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-black transition-all"
                       style={{
                         backgroundColor: done ? '#408A71' : '#285A480D',
-                        color: done ? '#fff' : '#285A4840',
+                        color: done ? '#fff' : '#285A4835',
+                        boxShadow: current ? '0 0 0 3px #408A7120' : undefined,
                       }}>
                       {done && !current ? '✓' : l.level}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <span className={`text-sm font-semibold ${current ? 'text-primary' : done ? 'text-primary/50' : 'text-primary/25'}`}>
-                        {l.name}
-                      </span>
-                    </div>
-                    <span className={`text-xs tabular-nums ${current ? 'font-bold' : ''}`}
-                      style={{ color: done ? '#408A71' : '#285A4830' }}>
-                      {l.minXp === 0 ? 'Старт' : `${l.minXp} XP`}
+                    <span className={`flex-1 text-xs font-semibold ${current ? 'text-primary' : done ? 'text-primary/45' : 'text-primary/22'}`}>
+                      {l.name}
                     </span>
-                    {current && (
-                      <span className="rounded-full bg-[#408A71] px-2 py-0.5 text-[10px] font-bold text-white">зараз</span>
-                    )}
-                    {next && !current && (
-                      <span className="rounded-full border border-primary/15 px-2 py-0.5 text-[10px] text-primary/35">далі</span>
-                    )}
+                    <span className="text-[11px] tabular-nums" style={{ color: done ? '#408A7180' : '#285A4825' }}>
+                      {l.minXp === 0 ? '—' : `${l.minXp} XP`}
+                    </span>
                   </div>
                 );
               })}
