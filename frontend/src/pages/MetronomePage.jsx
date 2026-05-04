@@ -6,6 +6,12 @@ function initials(user) {
   const name = user?.display_name || user?.username || user?.email || '?';
   return name.slice(0, 2).toUpperCase();
 }
+const XP_LEVELS = [0, 200, 500, 1000, 2000];
+function getLevel(xp = 0) {
+  let lv = 1;
+  for (let i = 0; i < XP_LEVELS.length; i++) { if (xp >= XP_LEVELS[i]) lv = i + 1; }
+  return lv;
+}
 
 const MIN_BPM = 40;
 const MAX_BPM = 240;
@@ -170,8 +176,13 @@ export default function MetronomePage() {
             <div className="relative">
               <button onClick={() => setProfile(o => !o)}
                 className="flex items-center gap-2 rounded-xl px-2 py-1.5 transition-colors hover:bg-primary/8">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-white">
-                  {initials(user)}
+                <div className="relative">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-white">
+                    {initials(user)}
+                  </div>
+                  <div className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#408A71] text-[9px] font-black text-white ring-1 ring-white">
+                    {getLevel(user?.xp)}
+                  </div>
                 </div>
                 <span className="hidden text-sm font-medium text-dark sm:block">
                   {user.display_name || user.username || user.email?.split('@')[0]}

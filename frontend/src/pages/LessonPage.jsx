@@ -96,6 +96,10 @@ export default function LessonPage() {
     const stored = localStorage.getItem('user');
     if (stored) setUser(JSON.parse(stored));
     const token = localStorage.getItem('token');
+    fetch(`${API_BASE}/api/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => { if (d.user) { setUser(d.user); localStorage.setItem('user', JSON.stringify(d.user)); } })
+      .catch(() => {});
     fetch(`${API_BASE}/api/practice/coins`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(d => { if (d.coins != null) setCoins(d.coins); })
@@ -136,6 +140,12 @@ export default function LessonPage() {
   function initials(u) {
     const name = u?.display_name || u?.username || u?.email || '?';
     return name.slice(0, 2).toUpperCase();
+  }
+  const XP_LEVELS = [0, 200, 500, 1000, 2000];
+  function getLevel(xp = 0) {
+    let lv = 1;
+    for (let i = 0; i < XP_LEVELS.length; i++) { if (xp >= XP_LEVELS[i]) lv = i + 1; }
+    return lv;
   }
 
   function logout() {
@@ -280,8 +290,13 @@ export default function LessonPage() {
                     onClick={() => setProfile(o => !o)}
                     className="flex items-center gap-2 rounded-xl px-2 py-1.5 transition-colors hover:bg-primary/8"
                   >
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#285A48] text-[11px] font-bold text-white">
-                      {user ? initials(user) : '?'}
+                    <div className="relative">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#285A48] text-[11px] font-bold text-white">
+                        {user ? initials(user) : '?'}
+                      </div>
+                      <div className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#408A71] text-[9px] font-black text-white ring-1 ring-white">
+                        {getLevel(user?.xp)}
+                      </div>
                     </div>
                     <span className="hidden text-sm font-medium text-dark sm:block">
                       {user?.display_name || user?.username || user?.email}
