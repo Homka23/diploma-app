@@ -133,16 +133,34 @@ export default function ProfilePage() {
         {/* Avatar + name */}
         <div className="rounded-2xl border border-primary/12 bg-white px-6 py-6">
           <div className="flex flex-col items-center gap-3 pb-5 border-b border-primary/6">
-            {/* Avatar with level ring */}
-            <div className="relative">
-              <div className={`flex h-20 w-20 items-center justify-center rounded-full bg-primary text-2xl font-black text-white ring-4 ring-offset-2 ring-offset-white ${curLevel.ring}`}>
-                {initials(user)}
-              </div>
-              {/* Level name badge */}
-              <span className={`absolute -bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-0.5 text-[11px] font-bold text-white shadow-sm ${curLevel.dot}`}>
-                {curLevel.name}
-              </span>
-            </div>
+            {/* Avatar with XP progress ring */}
+            {(() => {
+              const R = 46;
+              const circ = 2 * Math.PI * R;
+              const offset = circ * (1 - levelPct / 100);
+              return (
+                <div className="relative flex-shrink-0" style={{ width: 104, height: 104 }}>
+                  <svg className="absolute inset-0 -rotate-90" width="104" height="104" viewBox="0 0 104 104">
+                    {/* Track */}
+                    <circle cx="52" cy="52" r={R} fill="none" stroke="#408A71" strokeOpacity="0.12" strokeWidth="5" />
+                    {/* Progress */}
+                    <circle cx="52" cy="52" r={R} fill="none" stroke="#408A71" strokeWidth="5"
+                      strokeLinecap="round"
+                      strokeDasharray={circ}
+                      strokeDashoffset={offset}
+                      style={{ transition: 'stroke-dashoffset 0.8s ease' }}
+                    />
+                  </svg>
+                  <div className="absolute inset-3 flex items-center justify-center rounded-full bg-primary text-2xl font-black text-white">
+                    {initials(user)}
+                  </div>
+                  {/* Level name badge */}
+                  <span className="absolute -bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#408A71] px-3 py-0.5 text-[11px] font-bold text-white shadow-sm">
+                    {curLevel.name}
+                  </span>
+                </div>
+              );
+            })()}
             {/* Name */}
             <div className="mt-4 text-center">
               {editing ? (
@@ -183,7 +201,7 @@ export default function ProfilePage() {
             <div className="flex items-end justify-between">
               <div>
                 <p className="text-xs text-primary/40">Experience</p>
-                <p className="text-2xl font-black text-primary tabular-nums">{xp} <span className="text-sm font-semibold text-primary/40">XP</span></p>
+                <p className="text-2xl font-black tabular-nums" style={{ color: '#408A71' }}>{xp} <span className="text-sm font-semibold text-primary/40">XP</span></p>
               </div>
               {nextLevel ? (
                 <p className="text-xs text-primary/35 pb-1">{nextLevel.minXp - xp} XP to <span className="font-semibold text-primary/50">{nextLevel.name}</span></p>
@@ -195,7 +213,7 @@ export default function ProfilePage() {
             {nextLevel && (
               <div className="space-y-1">
                 <div className="h-2 overflow-hidden rounded-full bg-primary/10">
-                  <div className="h-full rounded-full bg-primary transition-all duration-700" style={{ width: `${levelPct}%` }} />
+                  <div className="h-full rounded-full transition-all duration-700" style={{ width: `${levelPct}%`, backgroundColor: '#408A71' }} />
                 </div>
                 <div className="flex justify-between text-[10px] text-primary/25">
                   <span>{curLevel.minXp} XP</span>
