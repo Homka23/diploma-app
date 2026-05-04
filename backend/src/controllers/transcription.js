@@ -154,6 +154,11 @@ export async function submitTranscription(req, res) {
     );
 
     if (passed) {
+      const { rows: prev } = await pool.query(
+        `SELECT transcription_completed FROM user_lesson_progress WHERE user_id = $1 AND lesson_id = $2`,
+        [userId, lessonId],
+      );
+      const alreadyDone = prev[0]?.transcription_completed ?? false;
       await pool.query(
         `INSERT INTO user_lesson_progress (user_id, lesson_id, transcription_completed, transcription_score_percent, status)
          VALUES ($1,$2,true,$3,'available')
@@ -163,6 +168,9 @@ export async function submitTranscription(req, res) {
         [userId, lessonId, scorePercent],
       );
       await refreshProgress(userId, lessonId);
+      if (!alreadyDone) {
+        await pool.query('UPDATE users SET xp = xp + 50 WHERE id = $1', [userId]);
+      }
     }
 
     res.json({ scorePercent, passed, recognized, expected, notes, noteDurations, durationScore,

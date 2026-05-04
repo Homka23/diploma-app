@@ -227,7 +227,7 @@ export async function getMe(req, res) {
   const userId = req.user.userId;
   try {
     const { rows } = await pool.query(
-      `SELECT id, username, email, display_name, role, streak_days, last_active_date, created_at
+      `SELECT id, username, email, display_name, role, streak_days, last_active_date, created_at, coins, xp
        FROM users WHERE id = $1`,
       [userId],
     );
@@ -235,6 +235,25 @@ export async function getMe(req, res) {
     res.json({ user: rows[0] });
   } catch (err) {
     console.error('getMe error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+}
+
+export async function buyXp(req, res) {
+  const userId = req.user.userId;
+  const COINS_COST = 10;
+  const XP_GAIN    = 20;
+  try {
+    const { rows } = await pool.query('SELECT coins FROM users WHERE id = $1', [userId]);
+    if (!rows.length) return res.status(404).json({ error: 'User not found' });
+    if (rows[0].coins < COINS_COST) return res.status(400).json({ error: 'Not enough coins' });
+    await pool.query(
+      'UPDATE users SET coins = coins - $1, xp = xp + $2 WHERE id = $3',
+      [COINS_COST, XP_GAIN, userId],
+    );
+    const { rows: updated } = await pool.query('SELECT coins, xp FROM users WHERE id = $1', [userId]);
+    res.json({ coins: updated[0].coins, xp: updated[0].xp });
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 }

@@ -151,6 +151,11 @@ export async function submitTest(req, res) {
     }
 
     if (bestPassed) {
+      const { rows: prev } = await pool.query(
+        `SELECT test_completed FROM user_lesson_progress WHERE user_id = $1 AND lesson_id = $2`,
+        [userId, lessonId],
+      );
+      const alreadyDone = prev[0]?.test_completed ?? false;
       await pool.query(
         `INSERT INTO user_lesson_progress (user_id, lesson_id, test_completed, test_score_percent, status)
          VALUES ($1, $2, true, $3, 'available')
@@ -160,6 +165,9 @@ export async function submitTest(req, res) {
         [userId, lessonId, bestScore],
       );
       await refreshProgress(userId, lessonId);
+      if (!alreadyDone) {
+        await pool.query('UPDATE users SET xp = xp + 30 WHERE id = $1', [userId]);
+      }
     }
 
     res.json({ scorePercent, correct, total: totalAnswers, passed,
