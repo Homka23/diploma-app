@@ -1,5 +1,5 @@
 import { API_BASE } from '../config.js';
-import { useState, useEffect, Fragment } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 
 function initials(user) {
@@ -197,45 +197,31 @@ export default function ProfilePage() {
           </div>
 
           {/* XP info */}
-          <div className="pt-5 space-y-3">
+          <div className="pt-5 space-y-2.5">
             <div className="flex items-baseline justify-between">
               <span className="text-xl font-black tabular-nums" style={{ color: '#408A71' }}>
                 {xp} <span className="text-sm font-medium text-primary/35">XP</span>
               </span>
               {nextLevel
-                ? <span className="text-xs text-primary/40">{nextLevel.minXp - xp} XP до <span className="font-semibold text-primary/55">{nextLevel.name}</span></span>
+                ? <span className="text-xs text-primary/35">{nextLevel.minXp - xp} XP до <span className="font-semibold text-primary/50">{nextLevel.name}</span></span>
                 : <span className="text-xs font-semibold" style={{ color: '#408A71' }}>Максимальний рівень</span>
               }
             </div>
 
-            {/* Level dots track */}
-            <div className="flex items-center">
-              {LEVELS.map((l, i) => {
-                const done    = xp >= l.minXp;
-                const current = l.level === curLevel.level;
-                const segFilled = i > 0 && done && xp >= LEVELS[i - 1].minXp;
-                return (
-                  <Fragment key={l.level}>
-                    {i > 0 && (
-                      <div className="flex-1 h-px transition-colors duration-500"
-                        style={{ backgroundColor: segFilled ? '#408A71' : '#285A4815' }} />
-                    )}
-                    <div className="flex-shrink-0 rounded-full transition-all duration-300" title={l.name}
-                      style={{
-                        width:  current ? 13 : 9,
-                        height: current ? 13 : 9,
-                        backgroundColor: done ? '#408A71' : '#285A4815',
-                        boxShadow: current ? '0 0 0 3px #408A7122' : undefined,
-                      }}
-                    />
-                  </Fragment>
-                );
-              })}
-            </div>
-            <div className="flex justify-between text-[10px] text-primary/25">
-              <span>{LEVELS[0].name}</span>
-              <span>{LEVELS[LEVELS.length - 1].name}</span>
-            </div>
+            {nextLevel ? (
+              <>
+                <div className="h-1.5 overflow-hidden rounded-full bg-primary/8">
+                  <div className="h-full rounded-full transition-all duration-700"
+                    style={{ width: `${levelPct}%`, backgroundColor: '#408A71' }} />
+                </div>
+                <div className="flex justify-between text-[11px]">
+                  <span className="font-semibold text-primary/50">{curLevel.name}</span>
+                  <span className="text-primary/30">{nextLevel.name}</span>
+                </div>
+              </>
+            ) : (
+              <div className="h-1.5 rounded-full" style={{ backgroundColor: '#408A71', opacity: 0.3 }} />
+            )}
           </div>
         </div>
 
