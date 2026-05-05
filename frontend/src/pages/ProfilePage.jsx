@@ -33,8 +33,9 @@ export default function ProfilePage() {
   const [nameVal, setNameVal] = useState('');
   const [saving, setSaving]   = useState(false);
   const [saveErr, setSaveErr] = useState('');
-  const [buying, setBuying]   = useState(false);
-  const [buyMsg, setBuyMsg]   = useState('');
+  const [buying, setBuying]         = useState(false);
+  const [buyMsg, setBuyMsg]         = useState('');
+  const [practiceStats, setPracticeStats] = useState({ completed: 0, total: 0 });
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -46,6 +47,10 @@ export default function ProfilePage() {
     fetch(`${API_BASE}/api/topics`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(d => { if (Array.isArray(d)) setTopics(d); })
+      .catch(() => {});
+    fetch(`${API_BASE}/api/practice/stats`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => { if (d.completed != null) setPracticeStats({ completed: d.completed, total: d.total }); })
       .catch(() => {});
   }, [navigate]);
 
@@ -334,7 +339,7 @@ export default function ProfilePage() {
             {[
               { label: 'Topics',  done: completedTopics,  total: topics.length },
               { label: 'Lessons', done: completedLessons, total: totalLessons  },
-              { label: 'Tabs',    done: completedTabs,    total: totalTabs     },
+              { label: 'Tasks',   done: practiceStats.completed, total: practiceStats.total },
             ].map(s => (
               <div key={s.label} className="rounded-xl bg-surface px-3 py-2.5 text-center">
                 <p className="text-xl font-black text-primary">{s.done}</p>
