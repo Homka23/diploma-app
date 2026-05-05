@@ -81,6 +81,7 @@ export default function LessonPage() {
   const [lessonComplete, setLessonComplete]     = useState(false);
   const completedThisSession = useRef(false);
   const readProgressBarRef   = useRef(null);
+  const contentRef           = useRef(null);
   const [scrolled, setScrolled]         = useState(false);
   const [testAnswered, setTestAnswered] = useState(0);
   const [testTotal,    setTestTotal]    = useState(0);
@@ -120,21 +121,23 @@ export default function LessonPage() {
   }, [id]);
 
   useEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
     let rafId = null;
     const handler = () => {
       if (rafId) return;
       rafId = requestAnimationFrame(() => {
         rafId = null;
-        setScrolled(window.scrollY > 0);
+        setScrolled(el.scrollTop > 0);
         if (readProgressBarRef.current) {
-          const scrollable = document.documentElement.scrollHeight - window.innerHeight;
-          const pct = scrollable > 0 ? Math.min(window.scrollY / scrollable * 100, 100) : 0;
+          const scrollable = el.scrollHeight - el.clientHeight;
+          const pct = scrollable > 0 ? Math.min(el.scrollTop / scrollable * 100, 100) : 0;
           readProgressBarRef.current.style.width = `${pct}%`;
         }
       });
     };
-    window.addEventListener('scroll', handler, { passive: true });
-    return () => { window.removeEventListener('scroll', handler); if (rafId) cancelAnimationFrame(rafId); };
+    el.addEventListener('scroll', handler, { passive: true });
+    return () => { el.removeEventListener('scroll', handler); if (rafId) cancelAnimationFrame(rafId); };
   }, []);
 
   function initials(u) {
@@ -209,7 +212,7 @@ export default function LessonPage() {
   const lessonTitle = data?.lesson?.title ?? '…';
 
   return (
-    <div className={`flex min-h-screen bg-[#f7f7f7] ${leaving ? 'animate-fade-out' : 'animate-fade-in'}`}>
+    <div className={`flex h-screen overflow-hidden bg-[#f7f7f7] ${leaving ? 'animate-fade-out' : 'animate-fade-in'}`}>
 
       {/* Mobile overlay */}
       {sidebarOpen && (
@@ -224,7 +227,7 @@ export default function LessonPage() {
         flex-shrink-0 bg-white border-r border-primary/10
         fixed inset-y-0 left-0 z-40 w-[320px]
         transition-transform duration-500 ease-in-out
-        lg:relative lg:inset-auto lg:z-auto lg:sticky lg:top-0 lg:h-screen
+        lg:relative lg:inset-auto lg:z-auto lg:h-full
         lg:translate-x-0 lg:transition-[width] lg:duration-500 lg:overflow-hidden
         ${sidebarOpen ? 'translate-x-0 lg:w-[320px]' : '-translate-x-full lg:w-0 lg:border-0'}
       `}>
@@ -239,10 +242,10 @@ export default function LessonPage() {
       </aside>
 
       {/* Main column */}
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col min-h-0">
 
         {/* Header */}
-        <header className="sticky top-0 z-20 border-b border-primary/10 bg-[#f7f7f7]">
+        <header className="flex-shrink-0 z-20 border-b border-primary/10 bg-[#f7f7f7]">
           <div className={`px-4 sm:px-6 lg:px-10 transition-all duration-300 ${scrolled ? 'pt-2 pb-1' : 'pt-3 pb-2 sm:pt-4 sm:pb-3 landscape:pt-1.5 landscape:pb-1'}`}>
 
             <div className={`flex items-center justify-between transition-all duration-300 ${scrolled ? 'mt-0' : 'mt-2 sm:mt-3'}`}>
@@ -364,6 +367,7 @@ export default function LessonPage() {
           </div>
         </header>
 
+        <div ref={contentRef} className="flex-1 overflow-y-auto">
         <main className="mx-auto w-full max-w-5xl px-3 sm:px-6 py-4 sm:py-8">
           {loading && (
             <div className="flex flex-col items-center justify-center py-24 gap-5">
@@ -460,6 +464,7 @@ export default function LessonPage() {
             </div>
           )}
         </main>
+        </div>
       </div>
 
       {/* Tab complete toast */}
