@@ -1,3 +1,4 @@
+//backend/src/helpers/progress.js
 import pool from '../db/index.js';
 
 // Recalculates lesson progress_percent and topic progress_percent for a user.

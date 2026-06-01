@@ -1,3 +1,4 @@
+//backend/src/controllers/transcription.js - 
 import fs   from 'fs';
 import pool from '../db/index.js';
 import { refreshProgress } from '../helpers/progress.js';
@@ -10,7 +11,7 @@ import { refreshProgress } from '../helpers/progress.js';
 function beatMultiplierFor(timeSignature) {
   if (!timeSignature) return 1;
   const [top, bottom] = timeSignature.split('/').map(Number);
-  if (bottom === 8 && top % 3 === 0) return 1.5;
+  if (bottom === 8 && top % 3 === 0 && top > 3) return 1.5;
   if (bottom === 2)                  return 2;
   if (bottom === 8)                  return 0.5;
   return 1;
@@ -226,43 +227,94 @@ export async function getTranscriptionAttempts(req, res) {
   res.json({ attempts: rows });
 }
 
+const _NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+function _toMidi(n) { const m = n.match(/^([A-G]#?)(\d)$/); if (!m) return 0; return parseInt(m[2]) * 12 + _NOTES.indexOf(m[1]) + 12; }
+function _diffWords(e, r) {
+  const d = _toMidi(r) - _toMidi(e), a = Math.abs(d), dir = d > 0 ? 'higher' : 'lower';
+  return a % 2 === 0 ? `${a/2} tone${a/2>1?'s':''} ${dir}` : `${a} semitone${a>1?'s':''} ${dir}`;
+}
+function _durWord(rec, exp) {
+  const q = rec / exp;
+  if (q < 0.5) return 'much too short'; if (q < 0.82) return 'too short';
+  if (q > 2.0) return 'much too long';  if (q > 1.22) return 'too long';
+  return 'correct';
+}
+
 export async function getTranscriptionFeedback(req, res) {
   const { expected = [], recognized = [], scorePercent = 0, noteDurations = [], durationScore = null, timeSignature = null } = req.body;
 
-  const wrongList    = expected.map((n, i) => recognized[i] && recognized[i] !== n ? `${n} → ${recognized[i]}` : null).filter(Boolean);
-  const missingList  = expected.filter((_, i) => !recognized[i]);
-  const tooShortList = noteDurations.map((d, i) => d.match === false && d.recognized != null && d.recognized < d.expected
-    ? `${expected[i]} (${d.recognized}s instead of ~${d.expected}s)` : null).filter(Boolean);
-  const tooLongList  = noteDurations.map((d, i) => d.match === false && d.recognized != null && d.recognized > d.expected
-    ? `${expected[i]} (${d.recognized}s instead of ~${d.expected}s)` : null).filter(Boolean);
+  // Filter out artifact notes (>12 semitones = 1 octave from expected) before sending to LLM
+  const pitchErrors = expected.map((n, i) => {
+    const r = recognized[i];
+    if (!r || r === n) return null;
+    if (Math.abs(_toMidi(r) - _toMidi(n)) > 12) return null; // skip artifacts
+    return `${n}: ${_diffWords(n, r)}`;
+  }).filter(Boolean);
 
-  const pitchSection = [
-    wrongList.length   ? `Wrong pitch: ${wrongList.join(', ')}`   : null,
-    missingList.length ? `Missing: ${missingList.join(', ')}`     : null,
-    !wrongList.length && !missingList.length ? 'All pitches correct' : null,
-  ].filter(Boolean).join('\n');
+  const durationErrors = noteDurations.map((d, i) => {
+    if (d.recognized == null || d.expected == null) return null;
+    const q = _durWord(d.recognized, d.expected);
+    return q !== 'correct' ? `${expected[i]}: ${q}` : null;
+  }).filter(Boolean);
 
-  const durationSection = durationScore != null ? [
-    `Duration accuracy: ${durationScore}%`,
-    tooShortList.length ? `Too short: ${tooShortList.join(', ')}` : null,
-    tooLongList.length  ? `Too long: ${tooLongList.join(', ')}`   : null,
-    !tooShortList.length && !tooLongList.length ? 'All durations correct' : null,
-  ].filter(Boolean).join('\n') : null;
+  const missingNotes = expected.filter((_, i) => !recognized[i]);
 
-  const prompt = `You are a strict but supportive piano teacher giving feedback on a student's performance.
+  const perfect = pitchErrors.length === 0 && durationErrors.length === 0 && missingNotes.length === 0;
 
-Task: play ${expected.join(' – ')}${timeSignature ? ` (${timeSignature})` : ''}.
-Overall score: ${scorePercent}%
+  const pitchLine = (() => {
+    const parts = [];
+    if (pitchErrors.length > 0) {
+      if (pitchErrors.length > 3) {
+        const diffs = expected.map((n,i) => { const r=recognized[i]; return r&&r!==n ? _toMidi(r)-_toMidi(n) : null; }).filter(v=>v!==null);
+        if (diffs.every(d=>d>0)) parts.push(`most notes too high (e.g. ${pitchErrors.slice(0,2).join('; ')})`);
+        else if (diffs.every(d=>d<0)) parts.push(`most notes too low (e.g. ${pitchErrors.slice(0,2).join('; ')})`);
+        else parts.push(`${pitchErrors.length} notes wrong (e.g. ${pitchErrors.slice(0,3).join('; ')})`);
+      } else {
+        parts.push(pitchErrors.join('; '));
+      }
+    }
+    if (missingNotes.length > 0) parts.push(`missing: ${missingNotes.join(', ')}`);
+    return parts.length > 0 ? parts.join('; ') : 'none';
+  })();
 
-PITCH RESULTS:
-${pitchSection}
-${durationSection ? `\nDURATION RESULTS:\n${durationSection}` : ''}
+  const durLine = durationErrors.length === 0
+    ? (durationScore != null ? 'none' : 'not assessed')
+    : durationErrors.length > 3
+      ? `${durationErrors.length} notes with timing issues (e.g. ${durationErrors.slice(0,2).join('; ')})`
+      : durationErrors.join('; ');
 
-Write clear, specific feedback in 3–5 sentences:
-1. Start with pitch accuracy (mention specific wrong or missing notes if any).
-2. Then address duration issues (mention specific notes that were too short or too long, not just a general comment).
-3. End with one concrete, actionable practice tip tailored to the main problem.
-Do not repeat the numbers from above verbatim. Do not add generic filler. Be direct and specific.`;
+  const prompt = [
+    'You are an experienced piano teacher. Study these examples of good feedback:',
+    '',
+    'EXAMPLE 1 — pitch errors:',
+    'Errors: C4 a tone higher, D4 a tone higher.',
+    'Good feedback: "Your C4 and D4 were each a tone too high — you seem to be starting one key to the right. Place your thumb on the correct C key and practice the sequence slowly until the position is automatic."',
+    '',
+    'EXAMPLE 2 — duration errors:',
+    'Errors: D4 too short, E4 too short.',
+    'Good feedback: "All pitches were correct, but D4 and E4 were cut off too early. Practice with a metronome at 60 BPM and count each beat aloud while sustaining every note for its full value."',
+    '',
+    'EXAMPLE 3 — many pitch errors same direction:',
+    'Errors: most notes too high (e.g. C4: 1 tone higher; D4: 1 tone higher).',
+    'Good feedback: "You were consistently playing a tone too high throughout — your hand position seems shifted one key to the right. Return to C, orient your hand from that anchor, and run the sequence again slowly."',
+    '',
+    'EXAMPLE 4 — missing notes:',
+    'Errors: missing: D4, E4, F4. Score: 13%.',
+    'Good feedback: "You only played the first note — the rest of the sequence was not heard. Practice the full scale one note at a time, confirming each key before moving on."',
+    '',
+    'EXAMPLE 5 — perfect:',
+    'No errors.',
+    'Good feedback: "Every note was in tune and rhythmically precise — excellent control. Now try the same passage at a slightly faster tempo to build fluency."',
+    '',
+    'Now give feedback for this performance:',
+    `Task: play ${expected.join(' – ')}${timeSignature ? ` (${timeSignature})` : ''}. Score: ${scorePercent}%`,
+    `Pitch errors: ${pitchLine}`,
+    `Duration errors: ${durLine}`,
+    perfect
+      ? 'Give specific praise and suggest one concrete next challenge. Max 2 sentences.'
+      : 'Use interval direction only (e.g. "a tone too high") — never "sharp"/"flat", never raw note names. Duration: "too short"/"too long" only. One practice tip. Max 3 sentences.',
+    'Feedback:',
+  ].join('\n');
 
   try {
     const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -274,8 +326,8 @@ Do not repeat the numbers from above verbatim. Do not add generic filler. Be dir
       body: JSON.stringify({
         model:       'llama-3.1-8b-instant',
         messages:    [{ role: 'user', content: prompt }],
-        temperature: 0.7,
-        max_tokens:  300,
+        temperature: 0.3,
+        max_tokens:  200,
       }),
     });
     if (!groqRes.ok) return res.status(502).json({ error: 'Groq API error' });

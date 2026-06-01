@@ -5,8 +5,8 @@ import pool from '../db/index.js';
 
 function beatMultiplierFor(ts) {
   if (!ts) return 1;
-  const [, bottom] = ts.split('/').map(Number);
-  if (bottom === 8) return 1.5;
+  const [top, bottom] = ts.split('/').map(Number);
+  if (bottom === 8 && top % 3 === 0 && top > 3) return 1.5;
   if (bottom === 2) return 2;
   return 1;
 }

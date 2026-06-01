@@ -1,3 +1,4 @@
+//frontend/src/components/TranscriptionTab.jsx
 import { API_BASE } from '../config.js';
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
